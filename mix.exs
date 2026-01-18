@@ -78,7 +78,7 @@ defmodule OeditusCredo.MixProject do
         LICENSE
         CHANGELOG.md
       ),
-      licenses: ["GPL-2.0", "CC-BY-SA-4.0"],
+      licenses: ["GPL-3.0", "CC-BY-SA-4.0"],
       maintainers: ["Oeditus Team"],
       links: %{
         "GitHub" => @source_url,
@@ -99,7 +99,7 @@ defmodule OeditusCredo.MixProject do
       source_url: @source_url,
       source_ref: "v#{@version}",
       homepage_url: @homepage_url,
-      formatters: ["html"],
+      formatters: ["html", "epub"],
       groups_for_modules: groups_for_modules(),
       nest_modules_by_prefix: [OeditusCredo.Check.Warning],
       before_closing_body_tag: &before_closing_body_tag/1,

@@ -131,19 +131,15 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is dual-licensed under:
 
-- **GNU General Public License v2.0 (GPLv2)** - for open-source projects
-- **Commercial License** - for proprietary applications
+- **GNU General Public License v3.0 (GPLv3)** - for open-source projects
+- **CC-BY-SA-4.0** - for proprietary applications
 
 ### Open Source (GPLv2)
 
-You may use this software under the GPLv2 for free in open-source projects. Under this license, your application must also be licensed under GPLv2 or a compatible license, and you must make your source code available.
+You may use this software under the GPLv3 for free in open-source projects. Under this license, your application must also be licensed under GPLv3 or a compatible license, and you must make your source code available.
 
-### Commercial License
+### CC-BY-SA-4.0 License
 
-If you wish to use this software in a proprietary application without releasing your source code under GPLv2, you must obtain a commercial license.
-
-For commercial licensing inquiries, please contact:
-- Email: licensing@oeditus.com
-- Web: https://oeditus.com/licensing
+If you wish to use this software in a proprietary application without releasing your source code under GPLv3, please contact us at mailto:am@amotion.city
 
 See the LICENSE file for complete details.

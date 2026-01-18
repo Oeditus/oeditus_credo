@@ -51,7 +51,7 @@ defmodule OeditusCredo.MixProject do
     [
       # Core dependency
       {:credo, "~> 1.7"},
-      
+
       # Development and documentation
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:excoveralls, "~> 0.18", only: :test, runtime: false},
@@ -78,14 +78,13 @@ defmodule OeditusCredo.MixProject do
         LICENSE
         CHANGELOG.md
       ),
-      licenses: ["GPL-2.0", "Commercial"],
+      licenses: ["GPL-2.0", "CC-BY-SA-4.0"],
       maintainers: ["Oeditus Team"],
       links: %{
         "GitHub" => @source_url,
         "Homepage" => @homepage_url,
         "Changelog" => "#{@source_url}/blob/main/CHANGELOG.md",
-        "Documentation" => "https://hexdocs.pm/oeditus_credo",
-        "Commercial License" => "https://oeditus.com/licensing"
+        "Documentation" => "https://hexdocs.pm/oeditus_credo"
       }
     ]
   end

@@ -50,8 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test coverage reporting with ExCoveralls
 
 ### Licensing
-- Dual-licensed under GPLv2 and Commercial License (MySQL-like licensing model)
-- Open-source use under GPLv2
+- Dual-licensed under GPLv3 and CC-BY-SA-4.0
+- Open-source use under GPLv3
 - Commercial license available for proprietary applications
 
 [0.1.0]: https://github.com/oeditus/oeditus_credo/releases/tag/v0.1.0

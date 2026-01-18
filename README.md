@@ -1,4 +1,4 @@
-# <img width="48" height="48" alt="logo-oeditus-credo-48x48" src="https://github.com/user-attachments/assets/f212dd0e-cca3-4309-b63d-1a55b5d640b4" />  OeditusCredo
+# ![logo-oeditus-credo-48x48>(https://github.com/user-attachments/assets/f212dd0e-cca3-4309-b63d-1a55b5d640b4)  OeditusCredo
 
 Custom Credo checks for detecting common Elixir/Phoenix anti-patterns and mistakes.
 

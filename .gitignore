@@ -30,3 +30,4 @@ oeditus_credo-*.tar
 /.elixir_ls/
 /.erl.history/
 
+/priv/plts/

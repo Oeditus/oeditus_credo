@@ -89,7 +89,6 @@ defmodule OeditusCredo.Check.Warning.TelemetryInRecursiveFunction do
   defp has_telemetry?(body) when is_atom(body), do: false
   defp has_telemetry?(body) when is_number(body), do: false
   defp has_telemetry?(body) when is_binary(body), do: false
-  defp has_telemetry?(nil), do: false
 
   defp has_telemetry?(body) do
     {_ast, found} =

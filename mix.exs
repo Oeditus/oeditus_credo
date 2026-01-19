@@ -16,6 +16,7 @@ defmodule OeditusCredo.MixProject do
       description: description(),
       package: package(),
       docs: docs(),
+      aliases: aliases(),
       escript: escript(),
       test_coverage: [tool: ExCoveralls],
       dialyzer: [
@@ -68,6 +69,17 @@ defmodule OeditusCredo.MixProject do
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:excoveralls, "~> 0.18", only: :test, runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+    ]
+  end
+
+  defp aliases do
+    [
+      quality: ["format", "credo --strict", "dialyzer"],
+      "quality.ci": [
+        "format --check-formatted",
+        "credo --strict",
+        "dialyzer"
+      ]
     ]
   end
 

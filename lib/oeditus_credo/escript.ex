@@ -9,6 +9,7 @@ defmodule OeditusCredo.Escript do
   @doc """
   Main entry point for the escript.
   """
+  @spec main([String.t()]) :: no_return()
   def main(args) do
     # Ensure Credo and dependencies are loaded
     Application.ensure_all_started(:credo)
@@ -45,8 +46,6 @@ defmodule OeditusCredo.Escript do
   defp run_credo(args) do
     # Use Credo's CLI module directly
     case Credo.CLI.main(args) do
-      {:ok, _} -> 0
-      {:error, _} -> 1
       _ -> 0
     end
   rescue

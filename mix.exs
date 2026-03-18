@@ -85,10 +85,10 @@ defmodule OeditusCredo.MixProject do
 
   defp description do
     """
-    Custom Credo checks for detecting common Elixir/Phoenix anti-patterns and
-    CWE Top 25 security vulnerabilities. Provides 36 comprehensive static analysis
+    Custom Credo checks for common Elixir/Phoenix anti-patterns and
+    CWE Top 25 security vulnerabilities. Provides 36 comprehensive
     checks covering code quality, error handling, performance, telemetry, and security
-    (SQL injection, XSS, path traversal, CSRF, SSRF, hardcoded credentials, and more).
+    (SQL injection, XSS, path traversal, CSRF, SSRF, hardcoded credentials, etc).
     """
   end
 

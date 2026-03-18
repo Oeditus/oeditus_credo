@@ -181,15 +181,56 @@ mix credo
 
 ## Configuration Options
 
-Some checks support configuration parameters:
+Many checks support configuration parameters. Pass them in `.credo.exs`:
 
-- **CallbackHell**: `max_nesting` - Maximum allowed case nesting (default: 2)
-- **HardcodedCredentials**: `exclude_test_files` - Whether to skip test files (default: true)
+### Code Quality
 
-Example:
+- **CallbackHell**: `max_nesting` -- Maximum allowed case nesting depth (default: `2`)
+- **DirectStructUpdate**: `extra_struct_patterns` -- Additional regex strings for struct-like variable names (default: `[]`)
+- **BlockingInPlug**: `extra_blocking_modules` -- Additional module atoms to treat as blocking (default: `[]`)
+
+### LiveView & Concurrency
+
+- **SyncOverAsync**: `extra_blocking_modules` -- Additional blocking module atoms (default: `[]`); `callback_functions` -- Callback names to check (default: `[:handle_event, :handle_call, :handle_info, :handle_cast, :handle_continue]`)
+- **MissingHandleAsync**: `extra_blocking_modules` -- Additional blocking module atoms (default: `[]`)
+
+### Telemetry & Observability
+
+- **MissingTelemetryForExternalHttp**: `extra_http_modules` -- Additional `{module_parts, [functions]}` tuples (default: `[]`)
+- **MissingTelemetryInAuthPlug**: `extra_auth_plug_names` -- Additional auth plug name substrings (default: `[]`)
+
+### Security -- Injection
+
+- **OSCommandInjection**: `exclude_test_files` -- Skip test files (default: `true`)
+- **CodeInjection**: `exclude_test_files` (default: `true`); `extra_dangerous_functions` -- Additional `Code.*` function atoms to flag (default: `[]`)
+
+### Security -- Auth
+
+- **MissingAuthentication**: `exclude_test_files` (default: `true`); `sensitive_actions` -- Controller actions requiring auth (default: `[:create, :update, :delete, :edit, :new]`)
+- **MissingAuthorization**: `exclude_test_files` (default: `true`); `extra_auth_indicators` -- Additional authorization indicator substrings (default: `[]`)
+- **IncorrectAuthorization**: `extra_auth_indicators` -- Additional authorization indicator substrings (default: `[]`)
+- **InsecureDirectObjectReference**: `extra_ownership_indicators` -- Additional ownership/auth indicator substrings (default: `[]`)
+
+### Security -- Data Protection
+
+- **SensitiveDataExposure**: `exclude_test_files` (default: `true`); `extra_sensitive_terms` -- Additional sensitive field substrings (default: `[]`)
+- **HardcodedCredentials**: `exclude_test_files` (default: `true`); `extra_credential_terms` -- Additional credential name substrings (default: `[]`)
+- **UnsafeDeserialization**: `exclude_test_files` -- Skip test files (default: `true`)
+
+### Security -- Web
+
+- **SSRFVulnerability**: `extra_http_modules` -- Additional HTTP module atom lists, e.g. `[[:MyHTTP]]` (default: `[]`)
+
+### Example
 
 ```elixir
-{OeditusCredo.Check.Warning.CallbackHell, [max_nesting: 3]}
+{OeditusCredo.Check.Warning.CallbackHell, [max_nesting: 3]},
+{OeditusCredo.Check.Warning.SyncOverAsync, [extra_blocking_modules: [:ExternalAPI]]},
+{OeditusCredo.Check.Security.CodeInjection, [extra_dangerous_functions: [:compile_string]]},
+{OeditusCredo.Check.Security.HardcodedCredentials, [extra_credential_terms: ["conn_string"]]},
+{OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp, [
+  extra_http_modules: [{[:MyApp, :HTTP], [:get, :post]}]
+]}
 ```
 
 ## Test Coverage
@@ -200,7 +241,7 @@ The library includes comprehensive tests for all 36 checks. Run tests with:
 mix test
 ```
 
-Current test coverage: 60+ tests, including comprehensive telemetry instrumentation checks.
+Current test coverage: 92 tests covering all checks, including security vulnerability detection and telemetry instrumentation.
 
 ## Contributing
 
@@ -208,17 +249,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is dual-licensed under:
-
-- **GNU General Public License v3.0 (GPLv3)** - for open-source projects
-- **CC-BY-SA-4.0** - for proprietary applications
-
-### Open Source (GPLv2)
-
-You may use this software under the GPLv3 for free in open-source projects. Under this license, your application must also be licensed under GPLv3 or a compatible license, and you must make your source code available.
-
-### CC-BY-SA-4.0 License
-
-If you wish to use this software in a proprietary application without releasing your source code under GPLv3, please contact us at mailto:am@amotion.city
-
-See the LICENSE file for complete details.
+MIT License. See [LICENSE](LICENSE) for details.

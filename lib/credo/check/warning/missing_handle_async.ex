@@ -25,23 +25,35 @@ defmodule OeditusCredo.Check.Warning.MissingHandleAsync do
             {:noreply, assign(socket, :posts, posts)}
           end
       """,
-      params: []
+      params: [
+        extra_blocking_modules: "Additional module atoms to treat as blocking (default: [])"
+      ]
     ]
 
-  @blocking_modules [:Repo, :HTTPoison, :Req]
+  @default_blocking_modules [:Repo, :HTTPoison, :Req]
 
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
+    extra = Params.get(params, :extra_blocking_modules, __MODULE__)
+    blocking = @default_blocking_modules ++ extra
 
     source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, blocking}))
   end
 
-  defp traverse({:def, meta, [{:handle_event, _, _}, [do: body]]} = ast, issues, issue_meta) do
+  @doc false
+  @impl true
+  def param_defaults, do: [extra_blocking_modules: []]
+
+  defp traverse(
+         {:def, meta, [{:handle_event, _, _}, [do: body]]} = ast,
+         issues,
+         {issue_meta, blocking}
+       ) do
     issues =
-      if has_blocking_calls?(body) and not has_async_call?(body) do
+      if has_blocking_calls?(body, blocking) and not has_async_call?(body) do
         [issue_for(issue_meta, meta[:line]) | issues]
       else
         issues
@@ -50,23 +62,23 @@ defmodule OeditusCredo.Check.Warning.MissingHandleAsync do
     {ast, issues}
   end
 
-  defp traverse(ast, issues, _issue_meta) do
+  defp traverse(ast, issues, _ctx) do
     {ast, issues}
   end
 
-  defp has_blocking_calls?({:__block__, _, statements}) when is_list(statements) do
-    Enum.any?(statements, &has_blocking_calls?/1)
+  defp has_blocking_calls?({:__block__, _, statements}, blocking) when is_list(statements) do
+    Enum.any?(statements, &has_blocking_calls?(&1, blocking))
   end
 
-  defp has_blocking_calls?({{:., _, [{:__aliases__, _, aliases}, _]}, _, _}) do
-    List.last(aliases) in @blocking_modules
+  defp has_blocking_calls?({{:., _, [{:__aliases__, _, aliases}, _]}, _, _}, blocking) do
+    List.last(aliases) in blocking
   end
 
-  defp has_blocking_calls?({_form, _, args}) when is_list(args) do
-    Enum.any?(args, &has_blocking_calls?/1)
+  defp has_blocking_calls?({_form, _, args}, blocking) when is_list(args) do
+    Enum.any?(args, &has_blocking_calls?(&1, blocking))
   end
 
-  defp has_blocking_calls?(_), do: false
+  defp has_blocking_calls?(_, _blocking), do: false
 
   defp has_async_call?({:__block__, _, statements}) when is_list(statements) do
     Enum.any?(statements, &has_async_call?/1)

@@ -2,9 +2,10 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
   @moduledoc """
   Checks for sensitive operations that appear to lack authorization checks.
 
-  MITRE reference: [CWE-862](https://cwe.mitre.org/data/definitions/862.html) —
+  MITRE reference: [CWE-862](https://cwe.mitre.org/data/definitions/862.html) --
   Missing Authorization.
   """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,
@@ -30,26 +31,47 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
             Repo.delete!(post)
           end
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to false to also check test files (default: true)",
+        extra_auth_indicators:
+          "Additional authorization indicator substrings to recognize (default: [])"
+      ]
     ]
 
   @sensitive_repo_calls ~w[delete delete! update update! insert insert!]
-  @auth_indicators ~w[authorize authorize! can? permit? allowed? current_user policy bodyguard]
+  @default_auth_indicators ~w[authorize authorize! can? permit? allowed? current_user policy bodyguard]
 
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      extra = Params.get(params, :extra_auth_indicators, __MODULE__)
+      indicators = @default_auth_indicators ++ extra
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+    end
   end
 
-  defp traverse({:def, meta, [{func_name, _, _args}, [do: body]]} = ast, issues, issue_meta)
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: true, extra_auth_indicators: []]
+
+  defp traverse(
+         {:def, meta, [{func_name, _, _args}, [do: body]]} = ast,
+         issues,
+         {issue_meta, indicators}
+       )
        when is_atom(func_name) do
     statements = block_to_statements(body)
 
-    if has_sensitive_repo_call?(statements) and not has_authorization_check?(statements) do
+    if has_sensitive_repo_call?(statements) and
+         not has_authorization_check?(statements, indicators) do
       {ast,
        [
          issue_for(
@@ -64,14 +86,13 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
     end
   end
 
-  defp traverse(ast, issues, _issue_meta), do: {ast, issues}
+  defp traverse(ast, issues, _ctx), do: {ast, issues}
 
   defp block_to_statements({:__block__, _, statements}) when is_list(statements), do: statements
   defp block_to_statements(statement), do: [statement]
 
-  defp has_sensitive_repo_call?(statements) do
-    Enum.any?(statements, &contains_sensitive_repo_call?/1)
-  end
+  defp has_sensitive_repo_call?(statements),
+    do: Enum.any?(statements, &contains_sensitive_repo_call?/1)
 
   defp contains_sensitive_repo_call?({{:., _, [{:__aliases__, _, [:Repo]}, call]}, _, _args})
        when is_atom(call) do
@@ -92,51 +113,59 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
 
   defp contains_sensitive_repo_call?(_), do: false
 
-  defp has_authorization_check?(statements) do
-    Enum.any?(statements, &contains_authorization?/1)
+  defp has_authorization_check?(statements, indicators) do
+    Enum.any?(statements, &contains_authorization?(&1, indicators))
   end
 
-  defp contains_authorization?({name, _, _args}) when is_atom(name) do
-    name
-    |> Atom.to_string()
-    |> auth_name?()
+  defp contains_authorization?({name, _, _args}, indicators) when is_atom(name) do
+    auth_name?(Atom.to_string(name), indicators)
   end
 
-  defp contains_authorization?({{:., _, [{:__aliases__, _, mod_parts}, name]}, _, _args})
+  defp contains_authorization?(
+         {{:., _, [{:__aliases__, _, mod_parts}, name]}, _, _args},
+         indicators
+       )
        when is_list(mod_parts) and is_atom(name) do
     full_name = Enum.join(mod_parts, ".") <> "." <> Atom.to_string(name)
-    auth_name?(full_name)
+    auth_name?(full_name, indicators)
   end
 
-  defp contains_authorization?({:., _, [_left, right_name]}) when is_atom(right_name) do
-    auth_name?(Atom.to_string(right_name))
+  defp contains_authorization?({:., _, [_left, right_name]}, indicators)
+       when is_atom(right_name) do
+    auth_name?(Atom.to_string(right_name), indicators)
   end
 
-  defp contains_authorization?({:if, _, [cond_ast | _]}) do
-    contains_authorization?(cond_ast)
+  defp contains_authorization?({:if, _, [cond_ast | _]}, indicators) do
+    contains_authorization?(cond_ast, indicators)
   end
 
-  defp contains_authorization?({:case, _, [expr | clauses]}) do
-    contains_authorization?(expr) or Enum.any?(clauses, &contains_authorization?/1)
+  defp contains_authorization?({:case, _, [expr | clauses]}, indicators) do
+    contains_authorization?(expr, indicators) or
+      Enum.any?(clauses, &contains_authorization?(&1, indicators))
   end
 
-  defp contains_authorization?({:->, _, [patterns, body]}) do
-    contains_authorization?(patterns) or contains_authorization?(body)
+  defp contains_authorization?({:->, _, [patterns, body]}, indicators) do
+    contains_authorization?(patterns, indicators) or contains_authorization?(body, indicators)
   end
 
-  defp contains_authorization?({:__block__, _, statements}) when is_list(statements) do
-    Enum.any?(statements, &contains_authorization?/1)
+  defp contains_authorization?({:__block__, _, statements}, indicators)
+       when is_list(statements) do
+    Enum.any?(statements, &contains_authorization?(&1, indicators))
   end
 
-  defp contains_authorization?({_, _, args}) when is_list(args) do
-    Enum.any?(args, &contains_authorization?/1)
+  defp contains_authorization?({_, _, args}, indicators) when is_list(args) do
+    Enum.any?(args, &contains_authorization?(&1, indicators))
   end
 
-  defp contains_authorization?(_), do: false
+  defp contains_authorization?(_, _indicators), do: false
 
-  defp auth_name?(name) when is_binary(name) do
+  defp auth_name?(name, indicators) when is_binary(name) do
     down = String.downcase(name)
-    Enum.any?(@auth_indicators, &String.contains?(down, &1))
+    Enum.any?(indicators, &String.contains?(down, &1))
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

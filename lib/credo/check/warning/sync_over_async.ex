@@ -24,57 +24,81 @@ defmodule OeditusCredo.Check.Warning.SyncOverAsync do
             {:noreply, socket}
           end
       """,
-      params: []
+      params: [
+        extra_blocking_modules: "Additional module atoms to treat as blocking (default: [])",
+        callback_functions:
+          "Callback function names to check (default: [:handle_event, :handle_call, :handle_info, :handle_cast, :handle_continue])"
+      ]
     ]
 
-  @blocking_modules [:Repo, :HTTPoison, :Req, :File, :System]
-  @callback_functions [:handle_event, :handle_call, :handle_info, :handle_cast, :handle_continue]
+  @default_blocking_modules [:Repo, :HTTPoison, :Req, :File, :System]
 
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
+    extra_blocking = Params.get(params, :extra_blocking_modules, __MODULE__)
+    blocking = @default_blocking_modules ++ extra_blocking
+    callbacks = Params.get(params, :callback_functions, __MODULE__)
 
     source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, blocking, callbacks}))
   end
 
-  # Match callback functions
+  @doc false
+  @impl true
+  def param_defaults do
+    [
+      extra_blocking_modules: [],
+      callback_functions: [
+        :handle_event,
+        :handle_call,
+        :handle_info,
+        :handle_cast,
+        :handle_continue
+      ]
+    ]
+  end
+
+  # Match callback functions (runtime list, so check in body instead of guard)
   defp traverse(
          {:def, meta, [{func_name, _, _args} = _head, [do: body]]} = ast,
          issues,
-         issue_meta
-       )
-       when func_name in @callback_functions do
-    issues =
-      if has_blocking_calls?(body) do
-        [issue_for(issue_meta, meta[:line], func_name) | issues]
-      else
-        issues
-      end
+         {issue_meta, blocking, callbacks}
+       ) do
+    if func_name in callbacks do
+      issues =
+        if has_blocking_calls?(body, blocking) do
+          [issue_for(issue_meta, meta[:line], func_name) | issues]
+        else
+          issues
+        end
 
+      {ast, issues}
+    else
+      {ast, issues}
+    end
+  end
+
+  defp traverse(ast, issues, _ctx) do
     {ast, issues}
   end
 
-  defp traverse(ast, issues, _issue_meta) do
-    {ast, issues}
-  end
-
-  defp has_blocking_calls?({:__block__, _, statements}) when is_list(statements) do
-    Enum.any?(statements, &has_blocking_calls?/1)
+  defp has_blocking_calls?({:__block__, _, statements}, blocking) when is_list(statements) do
+    Enum.any?(statements, &has_blocking_calls?(&1, blocking))
   end
 
   # Check for blocking module calls
-  defp has_blocking_calls?({{:., _, [{:__aliases__, _, aliases}, _func]}, _, _}) do
-    List.last(aliases) in @blocking_modules
+  defp has_blocking_calls?({{:., _, [{:__aliases__, _, aliases}, _func]}, _, _}, blocking) do
+    List.last(aliases) in blocking
   end
 
   # Recursively check nested structures
-  defp has_blocking_calls?({_form, _, args}) when is_list(args) do
-    Enum.any?(args, &has_blocking_calls?/1)
+  defp has_blocking_calls?({_form, _, args}, blocking) when is_list(args) do
+    Enum.any?(args, &has_blocking_calls?(&1, blocking))
   end
 
-  defp has_blocking_calls?(_), do: false
+  defp has_blocking_calls?(_, _blocking), do: false
 
   defp issue_for(issue_meta, line_no, func_name) do
     format_issue(

@@ -2,9 +2,10 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
   @moduledoc """
   Checks for direct object access patterns that may permit IDOR.
 
-  MITRE reference: [CWE-639](https://cwe.mitre.org/data/definitions/639.html) —
+  MITRE reference: [CWE-639](https://cwe.mitre.org/data/definitions/639.html) --
   Authorization Bypass Through User-Controlled Key.
   """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,
@@ -24,25 +25,38 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
           post = Repo.get!(Post, params["id"])
           authorize!(current_user, :read, post)
       """,
-      params: []
+      params: [
+        extra_ownership_indicators:
+          "Additional ownership/authorization indicator substrings (default: [])"
+      ]
     ]
 
   @repo_fetch_calls ~w[get get! get_by get_by!]
-  @ownership_indicators ~w[current_user user_id owner_id authorize authorize! policy]
+  @default_ownership_indicators ~w[current_user user_id owner_id authorize authorize! policy]
 
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
+    extra = Params.get(params, :extra_ownership_indicators, __MODULE__)
+    indicators = @default_ownership_indicators ++ extra
 
     source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
   end
 
-  defp traverse({:def, meta, [{_func_name, _, _args}, [do: body]]} = ast, issues, issue_meta) do
+  @doc false
+  @impl true
+  def param_defaults, do: [extra_ownership_indicators: []]
+
+  defp traverse(
+         {:def, meta, [{_func_name, _, _args}, [do: body]]} = ast,
+         issues,
+         {issue_meta, indicators}
+       ) do
     statements = block_to_statements(body)
 
-    if has_idor_pattern?(statements) and not has_ownership_check?(statements) do
+    if has_idor_pattern?(statements) and not has_ownership_check?(statements, indicators) do
       {ast,
        [
          issue_for(
@@ -57,14 +71,12 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
     end
   end
 
-  defp traverse(ast, issues, _issue_meta), do: {ast, issues}
+  defp traverse(ast, issues, _ctx), do: {ast, issues}
 
   defp block_to_statements({:__block__, _, statements}) when is_list(statements), do: statements
   defp block_to_statements(statement), do: [statement]
 
-  defp has_idor_pattern?(statements) do
-    Enum.any?(statements, &contains_idor_fetch?/1)
-  end
+  defp has_idor_pattern?(statements), do: Enum.any?(statements, &contains_idor_fetch?/1)
 
   defp contains_idor_fetch?({{:., _, [{:__aliases__, _, [:Repo]}, fetch]}, _, args})
        when is_atom(fetch) and is_list(args) do
@@ -77,16 +89,12 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
 
   defp contains_idor_fetch?(_), do: false
 
-  # params["id"] or params[:id]
-  defp params_id_access?({{:., _, [Access, :get]}, _, [{:params, _, _}, key]}) do
-    id_key?(key)
-  end
+  defp params_id_access?({{:., _, [Access, :get]}, _, [{:params, _, _}, key]}), do: id_key?(key)
 
   defp params_id_access?(
          {{:., _, [Access, :get]}, _, [{{:., _, [{:conn, _, _}, :params]}, _, _}, key]}
-       ) do
-    id_key?(key)
-  end
+       ),
+       do: id_key?(key)
 
   defp params_id_access?({:params, _, _}), do: true
   defp params_id_access?({:id, _, _}), do: true
@@ -97,32 +105,36 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
   defp id_key?("id"), do: true
   defp id_key?(_), do: false
 
-  defp has_ownership_check?(statements) do
-    Enum.any?(statements, &contains_ownership_indicator?/1)
+  defp has_ownership_check?(statements, indicators) do
+    Enum.any?(statements, &contains_ownership_indicator?(&1, indicators))
   end
 
-  defp contains_ownership_indicator?({name, _, _args}) when is_atom(name) do
-    ownership_name?(Atom.to_string(name))
+  defp contains_ownership_indicator?({name, _, _args}, indicators) when is_atom(name) do
+    ownership_name?(Atom.to_string(name), indicators)
   end
 
-  defp contains_ownership_indicator?({{:., _, [{:__aliases__, _, parts}, name]}, _, _args})
+  defp contains_ownership_indicator?(
+         {{:., _, [{:__aliases__, _, parts}, name]}, _, _args},
+         indicators
+       )
        when is_list(parts) and is_atom(name) do
-    ownership_name?(Enum.join(parts, ".") <> "." <> Atom.to_string(name))
+    ownership_name?(Enum.join(parts, ".") <> "." <> Atom.to_string(name), indicators)
   end
 
-  defp contains_ownership_indicator?({:., _, [_left, right_name]}) when is_atom(right_name) do
-    ownership_name?(Atom.to_string(right_name))
+  defp contains_ownership_indicator?({:., _, [_left, right_name]}, indicators)
+       when is_atom(right_name) do
+    ownership_name?(Atom.to_string(right_name), indicators)
   end
 
-  defp contains_ownership_indicator?({_, _, args}) when is_list(args) do
-    Enum.any?(args, &contains_ownership_indicator?/1)
+  defp contains_ownership_indicator?({_, _, args}, indicators) when is_list(args) do
+    Enum.any?(args, &contains_ownership_indicator?(&1, indicators))
   end
 
-  defp contains_ownership_indicator?(_), do: false
+  defp contains_ownership_indicator?(_, _indicators), do: false
 
-  defp ownership_name?(name) do
+  defp ownership_name?(name, indicators) do
     down = String.downcase(name)
-    Enum.any?(@ownership_indicators, &String.contains?(down, &1))
+    Enum.any?(indicators, &String.contains?(down, &1))
   end
 
   defp issue_for(issue_meta, line_no, detail) do

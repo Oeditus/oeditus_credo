@@ -25,7 +25,9 @@ defmodule OeditusCredo.Check.Security.UnsafeDeserialization do
           :erlang.binary_to_term(data, [:safe])
           # Validate and authenticate payload origin before deserialization
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to false to also check test files (default: true)"
+      ]
     ]
 
   @doc false
@@ -33,9 +35,18 @@ defmodule OeditusCredo.Check.Security.UnsafeDeserialization do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: true]
 
   # :erlang.binary_to_term(term)
   defp traverse({{:., _, [:erlang, :binary_to_term]}, meta, args} = ast, issues, issue_meta)
@@ -81,6 +92,10 @@ defmodule OeditusCredo.Check.Security.UnsafeDeserialization do
   end
 
   defp safe_option_present?(_), do: false
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no, detail) do
     format_issue(

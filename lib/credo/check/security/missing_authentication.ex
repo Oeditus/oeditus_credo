@@ -2,9 +2,10 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
   @moduledoc """
   Checks for sensitive controller actions that appear to lack authentication.
 
-  MITRE reference: [CWE-306](https://cwe.mitre.org/data/definitions/306.html) —
+  MITRE reference: [CWE-306](https://cwe.mitre.org/data/definitions/306.html) --
   Missing Authentication for Critical Function.
   """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,
@@ -36,25 +37,46 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
             end
           end
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to false to also check test files (default: true)",
+        sensitive_actions:
+          "List of action name strings considered sensitive (default: index, show, create, new, update, edit, delete, destroy)"
+      ]
     ]
 
-  @sensitive_actions ~w[index show create new update edit delete destroy]
+  @default_sensitive_actions ~w[index show create new update edit delete destroy]
 
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      actions = Params.get(params, :sensitive_actions, __MODULE__)
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, actions}))
+    end
   end
 
-  defp traverse({:defmodule, meta, [module_ast, [do: body]]} = ast, issues, issue_meta) do
+  @doc false
+  @impl true
+  def param_defaults do
+    [exclude_test_files: true, sensitive_actions: @default_sensitive_actions]
+  end
+
+  defp traverse(
+         {:defmodule, meta, [module_ast, [do: body]]} = ast,
+         issues,
+         {issue_meta, actions}
+       ) do
     module_name = module_name(module_ast)
     statements = block_to_statements(body)
 
-    if controller_module?(module_name) and has_sensitive_action?(statements) and
+    if controller_module?(module_name) and has_sensitive_action?(statements, actions) and
          not has_auth_plug?(statements) do
       {ast,
        [
@@ -70,35 +92,32 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
     end
   end
 
-  defp traverse(ast, issues, _issue_meta), do: {ast, issues}
+  defp traverse(ast, issues, _ctx), do: {ast, issues}
 
-  defp module_name({:__aliases__, _, parts}) when is_list(parts) do
-    Enum.join(parts, ".")
-  end
-
+  defp module_name({:__aliases__, _, parts}) when is_list(parts), do: Enum.join(parts, ".")
   defp module_name(_), do: ""
 
   defp controller_module?(name) do
-    String.ends_with?(name, "Controller") or String.contains?(String.downcase(name), "controller")
+    String.ends_with?(name, "Controller") or
+      String.contains?(String.downcase(name), "controller")
   end
 
   defp block_to_statements({:__block__, _, statements}) when is_list(statements), do: statements
   defp block_to_statements(statement), do: [statement]
 
-  defp has_sensitive_action?(statements) do
+  defp has_sensitive_action?(statements, actions) do
     Enum.any?(statements, fn
       {:def, _, [{name, _, _args}, _]} when is_atom(name) ->
-        Atom.to_string(name) in @sensitive_actions
+        Atom.to_string(name) in actions
 
       {:defp, _, [{name, _, _args}, _]} when is_atom(name) ->
-        Atom.to_string(name) in @sensitive_actions
+        Atom.to_string(name) in actions
 
       _ ->
         false
     end)
   end
 
-  # Accept any plug where plug name contains "auth"
   defp has_auth_plug?(statements) do
     Enum.any?(statements, fn
       {:plug, _, [plug_name | _rest]} ->
@@ -116,6 +135,10 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
 
   defp plug_name_to_string(name) when is_atom(name), do: Atom.to_string(name)
   defp plug_name_to_string(_), do: ""
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no, detail) do
     format_issue(

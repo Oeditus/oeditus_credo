@@ -2,9 +2,10 @@ defmodule OeditusCredo.Check.Security.HardcodedCredentials do
   @moduledoc """
   Checks for hard-coded secrets and credential-like values in source code.
 
-  MITRE reference: [CWE-798](https://cwe.mitre.org/data/definitions/798.html) —
+  MITRE reference: [CWE-798](https://cwe.mitre.org/data/definitions/798.html) --
   Use of Hard-coded Credentials.
   """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,
@@ -30,14 +31,15 @@ defmodule OeditusCredo.Check.Security.HardcodedCredentials do
           password = Application.fetch_env!(:my_app, :password)
       """,
       params: [
-        exclude_test_files: "Set to false to check test files"
+        exclude_test_files: "Set to false to check test files (default: true)",
+        extra_credential_terms: "Additional credential name substrings to flag (default: [])"
       ]
     ]
 
   @url_pattern ~r/https?:\/\/[^\s"']+/
   @ip_pattern ~r/\b(?:\d{1,3}\.){3}\d{1,3}\b/
 
-  @credential_terms ~w[
+  @default_credential_terms ~w[
     password passwd pwd secret token api_key apikey access_token refresh_token
     private_key secret_key credential credentials auth_key
   ]
@@ -46,24 +48,26 @@ defmodule OeditusCredo.Check.Security.HardcodedCredentials do
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
-    exclude_test = Params.get(params, :exclude_test_files, __MODULE__)
 
-    if exclude_test and test_file?(source_file.filename) do
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
       []
     else
+      extra = Params.get(params, :extra_credential_terms, __MODULE__)
+      terms = @default_credential_terms ++ extra
+
       source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, terms}))
     end
   end
 
   @doc false
   @impl true
-  def param_defaults do
-    [exclude_test_files: true]
-  end
+  def param_defaults, do: [exclude_test_files: true, extra_credential_terms: []]
 
   # Detect literal strings for URL/IP patterns
-  defp traverse({:<<>>, meta, [string]} = ast, issues, issue_meta) when is_binary(string) do
+  defp traverse({:<<>>, meta, [string]} = ast, issues, {issue_meta, _terms})
+       when is_binary(string) do
     issues =
       cond do
         Regex.match?(@url_pattern, string) and not localhost?(string) ->
@@ -80,8 +84,8 @@ defmodule OeditusCredo.Check.Security.HardcodedCredentials do
   end
 
   # Detect assignment: password = "..."
-  defp traverse({:=, meta, [left, right]} = ast, issues, issue_meta) do
-    if credential_name?(left) and literal_string?(right) do
+  defp traverse({:=, meta, [left, right]} = ast, issues, {issue_meta, terms}) do
+    if credential_name?(left, terms) and literal_string?(right) do
       {ast, [issue_for(issue_meta, meta[:line], "hardcoded credential value") | issues]}
     else
       {ast, issues}
@@ -89,9 +93,9 @@ defmodule OeditusCredo.Check.Security.HardcodedCredentials do
   end
 
   # Detect module attributes: @api_key "..."
-  defp traverse({:@, meta, [{attr_name, _, args}]} = ast, issues, issue_meta)
+  defp traverse({:@, meta, [{attr_name, _, args}]} = ast, issues, {issue_meta, terms})
        when is_atom(attr_name) and is_list(args) do
-    if credential_name?(attr_name) and Enum.any?(args, &literal_string?/1) do
+    if credential_name?(attr_name, terms) and Enum.any?(args, &literal_string?/1) do
       {ast,
        [issue_for(issue_meta, meta[:line], "hardcoded credential module attribute") | issues]}
     else
@@ -99,16 +103,17 @@ defmodule OeditusCredo.Check.Security.HardcodedCredentials do
     end
   end
 
-  defp traverse(ast, issues, _issue_meta), do: {ast, issues}
+  defp traverse(ast, issues, _ctx), do: {ast, issues}
 
-  defp credential_name?({name, _, _}) when is_atom(name), do: credential_name?(name)
+  defp credential_name?({name, _, _}, terms) when is_atom(name),
+    do: credential_name?(name, terms)
 
-  defp credential_name?(name) when is_atom(name) do
+  defp credential_name?(name, terms) when is_atom(name) do
     down = name |> Atom.to_string() |> String.downcase()
-    Enum.any?(@credential_terms, &String.contains?(down, &1))
+    Enum.any?(terms, &String.contains?(down, &1))
   end
 
-  defp credential_name?(_), do: false
+  defp credential_name?(_, _terms), do: false
 
   defp literal_string?({:<<>>, _, [str]}) when is_binary(str), do: true
   defp literal_string?(str) when is_binary(str), do: true

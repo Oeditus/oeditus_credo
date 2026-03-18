@@ -2,9 +2,10 @@ defmodule OeditusCredo.Check.Security.CodeInjection do
   @moduledoc """
   Checks for dynamic evaluation patterns that may lead to code injection.
 
-  MITRE reference: [CWE-94](https://cwe.mitre.org/data/definitions/94.html) —
+  MITRE reference: [CWE-94](https://cwe.mitre.org/data/definitions/94.html) --
   Improper Control of Generation of Code ("Code Injection").
   """
+
   use Credo.Check,
     base_priority: :higher,
     category: :warning,
@@ -27,35 +28,53 @@ defmodule OeditusCredo.Check.Security.CodeInjection do
           # Use pattern matching, parsers, or safe DSLs instead of eval
           Jason.decode!(json_input)
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to false to also check test files (default: true)",
+        extra_dangerous_functions: "Additional Code.* function atoms to flag (default: [])"
+      ]
     ]
 
-  @dangerous_functions [:eval_string, :eval_quoted, :eval_file]
+  @default_dangerous_functions [:eval_string, :eval_quoted, :eval_file]
 
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      extra = Params.get(params, :extra_dangerous_functions, __MODULE__)
+      dangerous = @default_dangerous_functions ++ extra
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, dangerous}))
+    end
   end
 
-  # Code.eval_string/1,2,3  Code.eval_quoted/1,2,3  Code.eval_file/1,2
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: true, extra_dangerous_functions: []]
+
   defp traverse(
          {{:., _, [{:__aliases__, _, [:Code]}, func]}, meta, _args} = ast,
          issues,
-         issue_meta
+         {issue_meta, dangerous}
        )
-       when func in @dangerous_functions do
-    {ast,
-     [
-       issue_for(issue_meta, meta[:line], "Code.#{func}")
-       | issues
-     ]}
+       when is_atom(func) do
+    if func in dangerous do
+      {ast, [issue_for(issue_meta, meta[:line], "Code.#{func}") | issues]}
+    else
+      {ast, issues}
+    end
   end
 
-  defp traverse(ast, issues, _issue_meta), do: {ast, issues}
+  defp traverse(ast, issues, _ctx), do: {ast, issues}
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no, func_name) do
     format_issue(

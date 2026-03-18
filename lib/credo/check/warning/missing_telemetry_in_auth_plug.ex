@@ -45,24 +45,34 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug do
             end
           end
       """,
-      params: []
+      params: [
+        extra_auth_plug_names: "Additional auth plug name substrings to detect (default: [])"
+      ]
     ]
+
+  @default_auth_plug_names ["auth", "authenticate", "authorize", "require_user", "ensure_auth"]
 
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
+    extra = Params.get(params, :extra_auth_plug_names, __MODULE__)
+    plug_names = @default_auth_plug_names ++ extra
 
     source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, plug_names}))
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [extra_auth_plug_names: []]
 
   defp traverse(
          {:defmodule, _, [{:__aliases__, _, module_name}, [do: module_body]]} = ast,
          issues,
-         issue_meta
+         {issue_meta, plug_names}
        ) do
-    if auth_plug_module?(module_name) do
+    if auth_plug_module?(module_name, plug_names) do
       issues =
         case find_call_function(module_body) do
           {:ok, call_meta, call_body} ->
@@ -82,21 +92,17 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug do
     end
   end
 
-  defp traverse(ast, issues, _issue_meta) do
+  defp traverse(ast, issues, _ctx) do
     {ast, issues}
   end
 
   # Detect auth-related module names
-  defp auth_plug_module?(module_name) when is_list(module_name) do
+  defp auth_plug_module?(module_name, plug_names) when is_list(module_name) do
     module_str = module_name |> Enum.join(".") |> String.downcase()
-
-    Enum.any?(
-      ["auth", "authenticate", "authorize", "require_user", "ensure_auth"],
-      &String.contains?(module_str, &1)
-    )
+    Enum.any?(plug_names, &String.contains?(module_str, &1))
   end
 
-  defp auth_plug_module?(_), do: false
+  defp auth_plug_module?(_, _plug_names), do: false
 
   defp find_call_function({:__block__, _, statements}) do
     find_call_in_statements(statements)

@@ -101,10 +101,10 @@ defmodule OeditusCredo.MixProject do
         mix.exs
         README.md
         STANDALONE.md
-        LICENSE
+        LICENSE.md
         CHANGELOG.md
       ),
-      licenses: ["GPL-3.0", "CC-BY-SA-4.0"],
+      licenses: ["MIT"],
       maintainers: ["Oeditus Team"],
       links: %{
         "GitHub" => @source_url,
@@ -140,6 +140,7 @@ defmodule OeditusCredo.MixProject do
       "README.md",
       "QUICKSTART.md": [title: "Quick Start"],
       "STANDALONE.md": [title: "Standalone Usage"],
+      LICENSE: [title: "License"],
       "CHANGELOG.md": [title: "Changelog"],
       "stuff/docs/Automated Detection of Common Elixir Phoenix Mistakes.md": [
         filename: "automated_detection",

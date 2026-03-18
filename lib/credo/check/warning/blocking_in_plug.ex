@@ -25,28 +25,36 @@ defmodule OeditusCredo.Check.Warning.BlockingInPlug do
             render(conn, "show.html", user: user)
           end
       """,
-      params: []
+      params: [
+        extra_blocking_modules: "Additional module atoms to treat as blocking (default: [])"
+      ]
     ]
 
-  @blocking_modules [:Repo, :HTTPoison, :Req, :File]
+  @default_blocking_modules [:Repo, :HTTPoison, :Req, :File]
 
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
+    extra = Params.get(params, :extra_blocking_modules, __MODULE__)
+    blocking = @default_blocking_modules ++ extra
 
     source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, blocking}))
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [extra_blocking_modules: []]
 
   # Check functions that might be used as plugs (accept conn as first arg)
   defp traverse(
          {:def, meta, [{func_name, _, [{:conn, _, _} | _rest]}, [do: body]]} = ast,
          issues,
-         issue_meta
+         {issue_meta, blocking}
        ) do
     issues =
-      if has_blocking_calls?(body) do
+      if has_blocking_calls?(body, blocking) do
         [issue_for(issue_meta, meta[:line], func_name) | issues]
       else
         issues
@@ -55,23 +63,23 @@ defmodule OeditusCredo.Check.Warning.BlockingInPlug do
     {ast, issues}
   end
 
-  defp traverse(ast, issues, _issue_meta) do
+  defp traverse(ast, issues, _ctx) do
     {ast, issues}
   end
 
-  defp has_blocking_calls?({:__block__, _, statements}) when is_list(statements) do
-    Enum.any?(statements, &has_blocking_calls?/1)
+  defp has_blocking_calls?({:__block__, _, statements}, blocking) when is_list(statements) do
+    Enum.any?(statements, &has_blocking_calls?(&1, blocking))
   end
 
-  defp has_blocking_calls?({{:., _, [{:__aliases__, _, aliases}, _func]}, _, _}) do
-    List.last(aliases) in @blocking_modules
+  defp has_blocking_calls?({{:., _, [{:__aliases__, _, aliases}, _func]}, _, _}, blocking) do
+    List.last(aliases) in blocking
   end
 
-  defp has_blocking_calls?({_form, _, args}) when is_list(args) do
-    Enum.any?(args, &has_blocking_calls?/1)
+  defp has_blocking_calls?({_form, _, args}, blocking) when is_list(args) do
+    Enum.any?(args, &has_blocking_calls?(&1, blocking))
   end
 
-  defp has_blocking_calls?(_), do: false
+  defp has_blocking_calls?(_, _blocking), do: false
 
   defp issue_for(issue_meta, line_no, func_name) do
     format_issue(

@@ -1,7 +1,7 @@
 defmodule OeditusCredo.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.3.0"
   @source_url "https://github.com/Oeditus/oeditus_credo"
   @homepage_url "https://oeditus.com"
 
@@ -85,9 +85,10 @@ defmodule OeditusCredo.MixProject do
 
   defp description do
     """
-    Custom Credo checks for detecting common Elixir/Phoenix anti-patterns including
-    N+1 queries, missing error handling, blocking operations, telemetry gaps, and more.
-    Provides 20 comprehensive static analysis checks to improve code quality.
+    Custom Credo checks for detecting common Elixir/Phoenix anti-patterns and
+    CWE Top 25 security vulnerabilities. Provides 36 comprehensive static analysis
+    checks covering code quality, error handling, performance, telemetry, and security
+    (SQL injection, XSS, path traversal, CSRF, SSRF, hardcoded credentials, and more).
     """
   end
 
@@ -126,7 +127,7 @@ defmodule OeditusCredo.MixProject do
       homepage_url: @homepage_url,
       formatters: ["html", "epub"],
       groups_for_modules: groups_for_modules(),
-      nest_modules_by_prefix: [OeditusCredo.Check.Warning],
+      nest_modules_by_prefix: [OeditusCredo.Check.Warning, OeditusCredo.Check.Security],
       before_closing_body_tag: &before_closing_body_tag/1,
       authors: ["Oeditus Team"],
       canonical: "https://hexdocs.pm/oeditus_credo",
@@ -167,7 +168,6 @@ defmodule OeditusCredo.MixProject do
         OeditusCredo.Check.Warning.InlineJavascript
       ],
       "Code Quality": [
-        OeditusCredo.Check.Warning.HardcodedValue,
         OeditusCredo.Check.Warning.DirectStructUpdate,
         OeditusCredo.Check.Warning.CallbackHell,
         OeditusCredo.Check.Warning.BlockingInPlug
@@ -178,6 +178,35 @@ defmodule OeditusCredo.MixProject do
         OeditusCredo.Check.Warning.TelemetryInRecursiveFunction,
         OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug,
         OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp
+      ],
+      "Security - Injection": [
+        OeditusCredo.Check.Security.SQLInjection,
+        OeditusCredo.Check.Security.OSCommandInjection,
+        OeditusCredo.Check.Security.CodeInjection,
+        OeditusCredo.Check.Security.XSSVulnerability
+      ],
+      "Security - Authentication & Authorization": [
+        OeditusCredo.Check.Security.MissingAuthentication,
+        OeditusCredo.Check.Security.MissingAuthorization,
+        OeditusCredo.Check.Security.IncorrectAuthorization,
+        OeditusCredo.Check.Security.InsecureDirectObjectReference
+      ],
+      "Security - Data Protection": [
+        OeditusCredo.Check.Security.SensitiveDataExposure,
+        OeditusCredo.Check.Security.HardcodedCredentials,
+        OeditusCredo.Check.Security.UnsafeDeserialization
+      ],
+      "Security - Input & File Handling": [
+        OeditusCredo.Check.Security.ImproperInputValidation,
+        OeditusCredo.Check.Security.PathTraversal,
+        OeditusCredo.Check.Security.UnrestrictedFileUpload
+      ],
+      "Security - Web": [
+        OeditusCredo.Check.Security.MissingCSRFProtection,
+        OeditusCredo.Check.Security.SSRFVulnerability
+      ],
+      "Security - Race Conditions": [
+        OeditusCredo.Check.Security.TOCTOU
       ]
     ]
   end

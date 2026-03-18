@@ -1,0 +1,126 @@
+defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
+  @moduledoc """
+  Checks for suspicious authorization flow and ordering.
+
+  MITRE reference: [CWE-863](https://cwe.mitre.org/data/definitions/863.html) —
+  Incorrect Authorization.
+  """
+  use Credo.Check,
+    base_priority: :high,
+    category: :warning,
+    explanations: [
+      check: """
+      Detects potentially incorrect authorization order ([CWE-863](https://cwe.mitre.org/data/definitions/863.html)).
+
+      Authorization should be checked BEFORE performing sensitive operations.
+
+      Bad:
+
+          Repo.delete!(post)
+          authorize!(user, :delete, post)
+
+      Good:
+
+          authorize!(user, :delete, post)
+          Repo.delete!(post)
+      """,
+      params: []
+    ]
+
+  @sensitive_repo_calls ~w[delete delete! update update! insert insert!]
+  @auth_indicators ~w[authorize authorize! can? permit? allowed? policy bodyguard]
+
+  @doc false
+  @impl true
+  def run(%SourceFile{} = source_file, params) do
+    issue_meta = IssueMeta.for(source_file, params)
+
+    source_file
+    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+  end
+
+  defp traverse({:def, meta, [{_func_name, _, _args}, [do: body]]} = ast, issues, issue_meta) do
+    statements = block_to_statements(body)
+
+    if auth_after_sensitive_operation?(statements) do
+      {ast,
+       [
+         issue_for(
+           issue_meta,
+           meta[:line],
+           "authorization check appears after sensitive operation in function body"
+         )
+         | issues
+       ]}
+    else
+      {ast, issues}
+    end
+  end
+
+  defp traverse(ast, issues, _issue_meta), do: {ast, issues}
+
+  defp block_to_statements({:__block__, _, statements}) when is_list(statements), do: statements
+  defp block_to_statements(statement), do: [statement]
+
+  defp auth_after_sensitive_operation?(statements) do
+    {_seen_sensitive, seen_auth_after} =
+      Enum.reduce(statements, {false, false}, fn stmt, {seen_sensitive, seen_auth_after} ->
+        cond do
+          contains_sensitive_repo_call?(stmt) and not seen_auth_after ->
+            {true, seen_auth_after}
+
+          contains_authorization?(stmt) and seen_sensitive ->
+            {seen_sensitive, true}
+
+          true ->
+            {seen_sensitive, seen_auth_after}
+        end
+      end)
+
+    seen_auth_after
+  end
+
+  defp contains_sensitive_repo_call?({{:., _, [{:__aliases__, _, [:Repo]}, call]}, _, _args})
+       when is_atom(call) do
+    Atom.to_string(call) in @sensitive_repo_calls
+  end
+
+  defp contains_sensitive_repo_call?({_, _, args}) when is_list(args) do
+    Enum.any?(args, &contains_sensitive_repo_call?/1)
+  end
+
+  defp contains_sensitive_repo_call?(_), do: false
+
+  defp contains_authorization?({name, _, _args}) when is_atom(name) do
+    auth_name?(Atom.to_string(name))
+  end
+
+  defp contains_authorization?({{:., _, [{:__aliases__, _, parts}, name]}, _, _args})
+       when is_list(parts) and is_atom(name) do
+    auth_name?(Enum.join(parts, ".") <> "." <> Atom.to_string(name))
+  end
+
+  defp contains_authorization?({:., _, [_left, right_name]}) when is_atom(right_name) do
+    auth_name?(Atom.to_string(right_name))
+  end
+
+  defp contains_authorization?({_, _, args}) when is_list(args) do
+    Enum.any?(args, &contains_authorization?/1)
+  end
+
+  defp contains_authorization?(_), do: false
+
+  defp auth_name?(name) do
+    down = String.downcase(name)
+    Enum.any?(@auth_indicators, &String.contains?(down, &1))
+  end
+
+  defp issue_for(issue_meta, line_no, detail) do
+    format_issue(
+      issue_meta,
+      message: "Potential incorrect authorization (CWE-863): #{detail}.",
+      trigger: "authorize",
+      line_no: line_no
+    )
+  end
+end

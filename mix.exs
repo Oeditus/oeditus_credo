@@ -101,7 +101,7 @@ defmodule OeditusCredo.MixProject do
         mix.exs
         README.md
         STANDALONE.md
-        LICENSE.md
+        LICENSE
         CHANGELOG.md
       ),
       licenses: ["MIT"],

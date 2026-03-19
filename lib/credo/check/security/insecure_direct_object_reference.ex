@@ -26,6 +26,7 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
           authorize!(current_user, :read, post)
       """,
       params: [
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_ownership_indicators:
           "Additional ownership/authorization indicator substrings (default: [])"
       ]
@@ -38,16 +39,22 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
-    extra = Params.get(params, :extra_ownership_indicators, __MODULE__)
-    indicators = @default_ownership_indicators ++ extra
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      extra = Params.get(params, :extra_ownership_indicators, __MODULE__)
+      indicators = @default_ownership_indicators ++ extra
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+    end
   end
 
   @doc false
   @impl true
-  def param_defaults, do: [extra_ownership_indicators: []]
+  def param_defaults, do: [exclude_test_files: false, extra_ownership_indicators: []]
 
   defp traverse(
          {:def, meta, [{_func_name, _, _args}, [do: body]]} = ast,
@@ -109,10 +116,6 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
     Enum.any?(statements, &contains_ownership_indicator?(&1, indicators))
   end
 
-  defp contains_ownership_indicator?({name, _, _args}, indicators) when is_atom(name) do
-    ownership_name?(Atom.to_string(name), indicators)
-  end
-
   defp contains_ownership_indicator?(
          {{:., _, [{:__aliases__, _, parts}, name]}, _, _args},
          indicators
@@ -126,6 +129,10 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
     ownership_name?(Atom.to_string(right_name), indicators)
   end
 
+  defp contains_ownership_indicator?({name, _, _args}, indicators) when is_atom(name) do
+    ownership_name?(Atom.to_string(name), indicators)
+  end
+
   defp contains_ownership_indicator?({_, _, args}, indicators) when is_list(args) do
     Enum.any?(args, &contains_ownership_indicator?(&1, indicators))
   end
@@ -135,6 +142,10 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
   defp ownership_name?(name, indicators) do
     down = String.downcase(name)
     Enum.any?(indicators, &String.contains?(down, &1))
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

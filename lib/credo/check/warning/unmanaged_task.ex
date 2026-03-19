@@ -18,7 +18,9 @@ defmodule OeditusCredo.Check.Warning.UnmanagedTask do
           Task.Supervisor.async_nolink(MyApp.TaskSupervisor, fn -> do_work() end)
           Task.Supervisor.start_child(MyApp.TaskSupervisor, fn -> background_job() end)
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @doc false
@@ -26,9 +28,18 @@ defmodule OeditusCredo.Check.Warning.UnmanagedTask do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   defp traverse({{:., meta, [{:__aliases__, _, [:Task]}, func]}, _, _} = ast, issues, issue_meta)
        when func in [:async, :start, :start_link] do
@@ -37,6 +48,10 @@ defmodule OeditusCredo.Check.Warning.UnmanagedTask do
 
   defp traverse(ast, issues, _issue_meta) do
     {ast, issues}
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, func) do

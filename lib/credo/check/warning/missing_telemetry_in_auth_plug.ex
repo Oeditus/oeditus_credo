@@ -46,6 +46,7 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug do
           end
       """,
       params: [
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_auth_plug_names: "Additional auth plug name substrings to detect (default: [])"
       ]
     ]
@@ -56,16 +57,22 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug do
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
-    extra = Params.get(params, :extra_auth_plug_names, __MODULE__)
-    plug_names = @default_auth_plug_names ++ extra
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, plug_names}))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      extra = Params.get(params, :extra_auth_plug_names, __MODULE__)
+      plug_names = @default_auth_plug_names ++ extra
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, plug_names}))
+    end
   end
 
   @doc false
   @impl true
-  def param_defaults, do: [extra_auth_plug_names: []]
+  def param_defaults, do: [exclude_test_files: false, extra_auth_plug_names: []]
 
   defp traverse(
          {:defmodule, _, [{:__aliases__, _, module_name}, [do: module_body]]} = ast,
@@ -140,6 +147,10 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug do
       end)
 
     found
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no) do

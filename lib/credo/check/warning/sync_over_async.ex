@@ -25,6 +25,7 @@ defmodule OeditusCredo.Check.Warning.SyncOverAsync do
           end
       """,
       params: [
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_blocking_modules: "Additional module atoms to treat as blocking (default: [])",
         callback_functions:
           "Callback function names to check (default: [:handle_event, :handle_call, :handle_info, :handle_cast, :handle_continue])"
@@ -37,18 +38,25 @@ defmodule OeditusCredo.Check.Warning.SyncOverAsync do
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
-    extra_blocking = Params.get(params, :extra_blocking_modules, __MODULE__)
-    blocking = @default_blocking_modules ++ extra_blocking
-    callbacks = Params.get(params, :callback_functions, __MODULE__)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, blocking, callbacks}))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      extra_blocking = Params.get(params, :extra_blocking_modules, __MODULE__)
+      blocking = @default_blocking_modules ++ extra_blocking
+      callbacks = Params.get(params, :callback_functions, __MODULE__)
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, blocking, callbacks}))
+    end
   end
 
   @doc false
   @impl true
   def param_defaults do
     [
+      exclude_test_files: false,
       extra_blocking_modules: [],
       callback_functions: [
         :handle_event,
@@ -99,6 +107,10 @@ defmodule OeditusCredo.Check.Warning.SyncOverAsync do
   end
 
   defp has_blocking_calls?(_, _blocking), do: false
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no, func_name) do
     format_issue(

@@ -26,7 +26,7 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
           Logger.info("user login", user_id: user.id)
       """,
       params: [
-        exclude_test_files: "Set to false to also check test files (default: true)",
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_sensitive_terms:
           "Additional sensitive field name substrings to detect (default: [])"
       ]
@@ -60,7 +60,7 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
 
   @doc false
   @impl true
-  def param_defaults, do: [exclude_test_files: true, extra_sensitive_terms: []]
+  def param_defaults, do: [exclude_test_files: false, extra_sensitive_terms: []]
 
   # Logger.info(...) / IO.inspect(...)
   defp traverse(
@@ -103,16 +103,16 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
     sensitive_name?(Atom.to_string(attr), terms)
   end
 
-  defp contains_sensitive_data?({name, _, _args}, terms) when is_atom(name) do
-    sensitive_name?(Atom.to_string(name), terms)
-  end
-
   defp contains_sensitive_data?({:<<>>, _, parts}, terms) when is_list(parts) do
     Enum.any?(parts, fn
       part when is_binary(part) -> sensitive_name?(part, terms)
       {_, _, _} = ast -> contains_sensitive_data?(ast, terms)
       _ -> false
     end)
+  end
+
+  defp contains_sensitive_data?({name, _, _args}, terms) when is_atom(name) do
+    sensitive_name?(Atom.to_string(name), terms)
   end
 
   defp contains_sensitive_data?({_, _, args}, terms) when is_list(args) do

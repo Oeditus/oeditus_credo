@@ -16,7 +16,9 @@ defmodule OeditusCredo.Check.Warning.InlineJavascript do
 
           <button phx-click="show_alert">Click</button>
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @inline_js_attrs ["onclick", "onchange", "onkeyup", "onkeydown", "onsubmit", "onload"]
@@ -26,14 +28,23 @@ defmodule OeditusCredo.Check.Warning.InlineJavascript do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    if heex_file?(source_file) do
-      source_file
-      |> Credo.Code.to_lines()
-      |> check_for_inline_js(issue_meta)
-    else
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
       []
+    else
+      if heex_file?(source_file) do
+        source_file
+        |> Credo.Code.to_lines()
+        |> check_for_inline_js(issue_meta)
+      else
+        []
+      end
     end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   defp heex_file?(%SourceFile{filename: filename}) do
     String.ends_with?(filename, [".heex", ".leex"])
@@ -55,6 +66,10 @@ defmodule OeditusCredo.Check.Warning.InlineJavascript do
     Enum.any?(@inline_js_attrs, fn attr ->
       String.contains?(line, attr <> "=")
     end)
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no) do

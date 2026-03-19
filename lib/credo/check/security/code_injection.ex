@@ -29,7 +29,7 @@ defmodule OeditusCredo.Check.Security.CodeInjection do
           Jason.decode!(json_input)
       """,
       params: [
-        exclude_test_files: "Set to false to also check test files (default: true)",
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_dangerous_functions: "Additional Code.* function atoms to flag (default: [])"
       ]
     ]
@@ -55,7 +55,7 @@ defmodule OeditusCredo.Check.Security.CodeInjection do
 
   @doc false
   @impl true
-  def param_defaults, do: [exclude_test_files: true, extra_dangerous_functions: []]
+  def param_defaults, do: [exclude_test_files: false, extra_dangerous_functions: []]
 
   defp traverse(
          {{:., _, [{:__aliases__, _, [:Code]}, func]}, meta, _args} = ast,

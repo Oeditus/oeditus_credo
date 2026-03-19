@@ -26,7 +26,7 @@ defmodule OeditusCredo.Check.Security.UnsafeDeserialization do
           # Validate and authenticate payload origin before deserialization
       """,
       params: [
-        exclude_test_files: "Set to false to also check test files (default: true)"
+        exclude_test_files: "Set to true to skip test files (default: false)"
       ]
     ]
 
@@ -46,7 +46,7 @@ defmodule OeditusCredo.Check.Security.UnsafeDeserialization do
 
   @doc false
   @impl true
-  def param_defaults, do: [exclude_test_files: true]
+  def param_defaults, do: [exclude_test_files: false]
 
   # :erlang.binary_to_term(term)
   defp traverse({{:., _, [:erlang, :binary_to_term]}, meta, args} = ast, issues, issue_meta)

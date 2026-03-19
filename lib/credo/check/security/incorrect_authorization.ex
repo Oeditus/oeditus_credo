@@ -26,6 +26,7 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
           Repo.delete!(post)
       """,
       params: [
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_auth_indicators:
           "Additional authorization indicator substrings to recognize (default: [])"
       ]
@@ -38,16 +39,22 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
-    extra = Params.get(params, :extra_auth_indicators, __MODULE__)
-    indicators = @default_auth_indicators ++ extra
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      extra = Params.get(params, :extra_auth_indicators, __MODULE__)
+      indicators = @default_auth_indicators ++ extra
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+    end
   end
 
   @doc false
   @impl true
-  def param_defaults, do: [extra_auth_indicators: []]
+  def param_defaults, do: [exclude_test_files: false, extra_auth_indicators: []]
 
   defp traverse(
          {:def, meta, [{_func_name, _, _args}, [do: body]]} = ast,
@@ -105,10 +112,6 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
 
   defp contains_sensitive_repo_call?(_), do: false
 
-  defp contains_authorization?({name, _, _args}, indicators) when is_atom(name) do
-    auth_name?(Atom.to_string(name), indicators)
-  end
-
   defp contains_authorization?({{:., _, [{:__aliases__, _, parts}, name]}, _, _args}, indicators)
        when is_list(parts) and is_atom(name) do
     auth_name?(Enum.join(parts, ".") <> "." <> Atom.to_string(name), indicators)
@@ -117,6 +120,10 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
   defp contains_authorization?({:., _, [_left, right_name]}, indicators)
        when is_atom(right_name) do
     auth_name?(Atom.to_string(right_name), indicators)
+  end
+
+  defp contains_authorization?({name, _, _args}, indicators) when is_atom(name) do
+    auth_name?(Atom.to_string(name), indicators)
   end
 
   defp contains_authorization?({_, _, args}, indicators) when is_list(args) do
@@ -128,6 +135,10 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
   defp auth_name?(name, indicators) do
     down = String.downcase(name)
     Enum.any?(indicators, &String.contains?(down, &1))
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

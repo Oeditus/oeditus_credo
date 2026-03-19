@@ -30,7 +30,9 @@ defmodule OeditusCredo.Check.Security.UnrestrictedFileUpload do
             if ext in @allowed_extensions, do: ...
           end
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @file_write_calls ~w[cp cp! copy copy! write write! rename rename!]
@@ -41,9 +43,18 @@ defmodule OeditusCredo.Check.Security.UnrestrictedFileUpload do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   defp traverse({:def, meta, [{func_name, _, args}, [do: body]]} = ast, issues, issue_meta)
        when is_atom(func_name) do
@@ -131,6 +142,10 @@ defmodule OeditusCredo.Check.Security.UnrestrictedFileUpload do
   defp validation_name?(name) do
     down = String.downcase(name)
     Enum.any?(@validation_indicators, &String.contains?(down, &1))
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

@@ -38,7 +38,7 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
           end
       """,
       params: [
-        exclude_test_files: "Set to false to also check test files (default: true)",
+        exclude_test_files: "Set to true to skip test files (default: false)",
         sensitive_actions:
           "List of action name strings considered sensitive (default: index, show, create, new, update, edit, delete, destroy)"
       ]
@@ -65,7 +65,7 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
   @doc false
   @impl true
   def param_defaults do
-    [exclude_test_files: true, sensitive_actions: @default_sensitive_actions]
+    [exclude_test_files: false, sensitive_actions: @default_sensitive_actions]
   end
 
   defp traverse(

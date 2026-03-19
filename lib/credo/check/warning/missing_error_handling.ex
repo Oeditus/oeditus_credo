@@ -26,7 +26,9 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandling do
             user
           end
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @doc false
@@ -34,9 +36,18 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandling do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   defp traverse({:=, meta, [left, _right]} = ast, issues, issue_meta) do
     issues =
@@ -61,6 +72,10 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandling do
   # 3+ element tuples represented as {:{}, meta, [:ok | rest]}
   defp ok_tuple_pattern?({:{}, _, [:ok | _]}), do: true
   defp ok_tuple_pattern?(_), do: false
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no) do
     format_issue(

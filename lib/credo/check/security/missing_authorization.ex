@@ -32,7 +32,7 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
           end
       """,
       params: [
-        exclude_test_files: "Set to false to also check test files (default: true)",
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_auth_indicators:
           "Additional authorization indicator substrings to recognize (default: [])"
       ]
@@ -60,7 +60,7 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
 
   @doc false
   @impl true
-  def param_defaults, do: [exclude_test_files: true, extra_auth_indicators: []]
+  def param_defaults, do: [exclude_test_files: false, extra_auth_indicators: []]
 
   defp traverse(
          {:def, meta, [{func_name, _, _args}, [do: body]]} = ast,
@@ -117,10 +117,6 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
     Enum.any?(statements, &contains_authorization?(&1, indicators))
   end
 
-  defp contains_authorization?({name, _, _args}, indicators) when is_atom(name) do
-    auth_name?(Atom.to_string(name), indicators)
-  end
-
   defp contains_authorization?(
          {{:., _, [{:__aliases__, _, mod_parts}, name]}, _, _args},
          indicators
@@ -151,6 +147,10 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
   defp contains_authorization?({:__block__, _, statements}, indicators)
        when is_list(statements) do
     Enum.any?(statements, &contains_authorization?(&1, indicators))
+  end
+
+  defp contains_authorization?({name, _, _args}, indicators) when is_atom(name) do
+    auth_name?(Atom.to_string(name), indicators)
   end
 
   defp contains_authorization?({_, _, args}, indicators) when is_list(args) do

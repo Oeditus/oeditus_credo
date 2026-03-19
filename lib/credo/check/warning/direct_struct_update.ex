@@ -20,6 +20,7 @@ defmodule OeditusCredo.Check.Warning.DirectStructUpdate do
           |> Repo.update()
       """,
       params: [
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_struct_patterns:
           "Additional regex pattern strings for struct-like variable names (default: [])"
       ]
@@ -31,18 +32,24 @@ defmodule OeditusCredo.Check.Warning.DirectStructUpdate do
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
-    extra = Params.get(params, :extra_struct_patterns, __MODULE__)
 
-    patterns =
-      [@default_struct_pattern | Enum.map(extra, &Regex.compile!/1)]
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      extra = Params.get(params, :extra_struct_patterns, __MODULE__)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, patterns}))
+      patterns =
+        [@default_struct_pattern | Enum.map(extra, &Regex.compile!/1)]
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, patterns}))
+    end
   end
 
   @doc false
   @impl true
-  def param_defaults, do: [extra_struct_patterns: []]
+  def param_defaults, do: [exclude_test_files: false, extra_struct_patterns: []]
 
   # Match struct update syntax: %User{user | field: value}
   defp traverse(
@@ -77,6 +84,10 @@ defmodule OeditusCredo.Check.Warning.DirectStructUpdate do
   end
 
   defp looks_like_struct?(_, _patterns), do: false
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no, type) do
     format_issue(

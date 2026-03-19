@@ -16,7 +16,9 @@ defmodule OeditusCredo.Check.Warning.MissingThrottle do
 
           <input type="text" phx-change="search" phx-debounce="300" />
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @trigger_events ["phx-change", "phx-keyup", "phx-input"]
@@ -27,14 +29,23 @@ defmodule OeditusCredo.Check.Warning.MissingThrottle do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    if heex_file?(source_file) do
-      source_file
-      |> Credo.Code.to_lines()
-      |> check_for_missing_throttle(issue_meta)
-    else
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
       []
+    else
+      if heex_file?(source_file) do
+        source_file
+        |> Credo.Code.to_lines()
+        |> check_for_missing_throttle(issue_meta)
+      else
+        []
+      end
     end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   defp heex_file?(%SourceFile{filename: filename}) do
     String.ends_with?(filename, [".heex", ".leex"])
@@ -58,6 +69,10 @@ defmodule OeditusCredo.Check.Warning.MissingThrottle do
 
   defp has_throttle?(line) do
     Enum.any?(@throttle_attrs, &String.contains?(line, &1))
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no) do

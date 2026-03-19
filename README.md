@@ -181,7 +181,13 @@ mix credo
 
 ## Configuration Options
 
-Many checks support configuration parameters. Pass them in `.credo.exs`:
+All checks support configuration parameters. Pass them in `.credo.exs`:
+
+### Common Parameters
+
+Every check accepts the following parameter:
+
+- `exclude_test_files` (`boolean()`, default: `false`) -- When set to `true`, files ending in `_test.exs` or located under a `/test/` directory are skipped.
 
 ### Code Quality
 
@@ -201,21 +207,19 @@ Many checks support configuration parameters. Pass them in `.credo.exs`:
 
 ### Security -- Injection
 
-- **OSCommandInjection**: `exclude_test_files` -- Skip test files (default: `true`)
-- **CodeInjection**: `exclude_test_files` (default: `true`); `extra_dangerous_functions` -- Additional `Code.*` function atoms to flag (default: `[]`)
+- **CodeInjection**: `extra_dangerous_functions` -- Additional `Code.*` function atoms to flag (default: `[]`)
 
 ### Security -- Auth
 
-- **MissingAuthentication**: `exclude_test_files` (default: `true`); `sensitive_actions` -- Controller actions requiring auth (default: `[:create, :update, :delete, :edit, :new]`)
-- **MissingAuthorization**: `exclude_test_files` (default: `true`); `extra_auth_indicators` -- Additional authorization indicator substrings (default: `[]`)
+- **MissingAuthentication**: `sensitive_actions` -- Controller actions requiring auth (default: `[:index, :show, :create, :new, :update, :edit, :delete, :destroy]`)
+- **MissingAuthorization**: `extra_auth_indicators` -- Additional authorization indicator substrings (default: `[]`)
 - **IncorrectAuthorization**: `extra_auth_indicators` -- Additional authorization indicator substrings (default: `[]`)
 - **InsecureDirectObjectReference**: `extra_ownership_indicators` -- Additional ownership/auth indicator substrings (default: `[]`)
 
 ### Security -- Data Protection
 
-- **SensitiveDataExposure**: `exclude_test_files` (default: `true`); `extra_sensitive_terms` -- Additional sensitive field substrings (default: `[]`)
-- **HardcodedCredentials**: `exclude_test_files` (default: `true`); `extra_credential_terms` -- Additional credential name substrings (default: `[]`)
-- **UnsafeDeserialization**: `exclude_test_files` -- Skip test files (default: `true`)
+- **SensitiveDataExposure**: `extra_sensitive_terms` -- Additional sensitive field substrings (default: `[]`)
+- **HardcodedCredentials**: `extra_credential_terms` -- Additional credential name substrings (default: `[]`)
 
 ### Security -- Web
 
@@ -227,7 +231,7 @@ Many checks support configuration parameters. Pass them in `.credo.exs`:
 {OeditusCredo.Check.Warning.CallbackHell, [max_nesting: 3]},
 {OeditusCredo.Check.Warning.SyncOverAsync, [extra_blocking_modules: [:ExternalAPI]]},
 {OeditusCredo.Check.Security.CodeInjection, [extra_dangerous_functions: [:compile_string]]},
-{OeditusCredo.Check.Security.HardcodedCredentials, [extra_credential_terms: ["conn_string"]]},
+{OeditusCredo.Check.Security.HardcodedCredentials, [exclude_test_files: true, extra_credential_terms: ["conn_string"]]},
 {OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp, [
   extra_http_modules: [{[:MyApp, :HTTP], [:get, :post]}]
 ]}

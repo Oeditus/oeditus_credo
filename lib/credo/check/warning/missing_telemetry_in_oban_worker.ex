@@ -32,7 +32,9 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInObanWorker do
             end
           end
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @doc false
@@ -40,9 +42,18 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInObanWorker do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   defp traverse(
          {:defmodule, _, [{:__aliases__, _, _module_name}, [do: module_body]]} = ast,
@@ -122,6 +133,10 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInObanWorker do
       end)
 
     found
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no) do

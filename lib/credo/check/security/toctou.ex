@@ -28,7 +28,9 @@ defmodule OeditusCredo.Check.Security.TOCTOU do
             {:error, :enoent} -> handle_missing()
           end
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @check_functions ~w[exists? stat stat!]
@@ -39,9 +41,18 @@ defmodule OeditusCredo.Check.Security.TOCTOU do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   # Match: if File.exists?(path) do ... File.read(path) ... end
   defp traverse({:if, meta, [condition, blocks]} = ast, issues, issue_meta)
@@ -101,6 +112,10 @@ defmodule OeditusCredo.Check.Security.TOCTOU do
         _ -> false
       end
     end
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

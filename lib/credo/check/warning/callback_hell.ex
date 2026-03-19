@@ -28,23 +28,32 @@ defmodule OeditusCredo.Check.Warning.CallbackHell do
             result
           end
       """,
-      params: [max_nesting: "Maximum allowed case statement nesting (default: 2)"]
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)",
+        max_nesting: "Maximum allowed case statement nesting (default: 2)"
+      ]
     ]
 
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
-    max_nesting = Params.get(params, :max_nesting, __MODULE__)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, max_nesting}))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      max_nesting = Params.get(params, :max_nesting, __MODULE__)
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, max_nesting}))
+    end
   end
 
   @doc false
   @impl true
   def param_defaults do
-    [max_nesting: 2]
+    [exclude_test_files: false, max_nesting: 2]
   end
 
   defp traverse({:case, meta, _} = ast, issues, {issue_meta, max_nesting}) do
@@ -83,6 +92,10 @@ defmodule OeditusCredo.Check.Warning.CallbackHell do
 
   defp count_nested_cases({:case, _, _} = ast), do: count_case_nesting(ast)
   defp count_nested_cases(_), do: 0
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no, level) do
     format_issue(

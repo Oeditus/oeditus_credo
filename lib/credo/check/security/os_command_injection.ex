@@ -28,7 +28,7 @@ defmodule OeditusCredo.Check.Security.OSCommandInjection do
           # Always use literal command names with System.cmd
       """,
       params: [
-        exclude_test_files: "Set to false to also check test files (default: true)"
+        exclude_test_files: "Set to true to skip test files (default: false)"
       ]
     ]
 
@@ -48,7 +48,7 @@ defmodule OeditusCredo.Check.Security.OSCommandInjection do
 
   @doc false
   @impl true
-  def param_defaults, do: [exclude_test_files: true]
+  def param_defaults, do: [exclude_test_files: false]
 
   # System.shell/1 -- always dangerous (runs through shell)
   defp traverse(

@@ -18,7 +18,9 @@ defmodule OeditusCredo.Check.Warning.MissingPreload do
           import Ecto.Query
           users = User |> preload(:posts) |> Repo.all()
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @doc false
@@ -26,9 +28,18 @@ defmodule OeditusCredo.Check.Warning.MissingPreload do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   # Check for Repo.all without preload in a pipe chain
   defp traverse(
@@ -62,6 +73,10 @@ defmodule OeditusCredo.Check.Warning.MissingPreload do
   # Match preload as a module function: Query.preload(:posts)
   defp preload?({{:., _, [_, :preload]}, _, _}), do: true
   defp preload?(_), do: false
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no) do
     format_issue(

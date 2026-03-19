@@ -27,7 +27,9 @@ defmodule OeditusCredo.Check.Security.SQLInjection do
           Repo.query("SELECT * FROM users WHERE id = $1", [id])
           from(u in User, where: u.id == ^id)
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @sql_keywords ~w[SELECT INSERT UPDATE DELETE DROP CREATE ALTER TRUNCATE EXEC EXECUTE]
@@ -37,9 +39,18 @@ defmodule OeditusCredo.Check.Security.SQLInjection do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   # Detect: Repo.query("SQL..." <> var)
   # AST: {{:., _, [Repo, :query]}, _, [concat_arg | _]}
@@ -126,6 +137,10 @@ defmodule OeditusCredo.Check.Security.SQLInjection do
   defp contains_sql_keyword?(str) when is_binary(str) do
     upper = String.upcase(str)
     Enum.any?(@sql_keywords, &String.contains?(upper, &1))
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

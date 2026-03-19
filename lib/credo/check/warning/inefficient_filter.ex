@@ -19,7 +19,9 @@ defmodule OeditusCredo.Check.Warning.InefficientFilter do
           import Ecto.Query
           active_users = User |> where([u], u.active == true) |> Repo.all()
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @doc false
@@ -27,9 +29,18 @@ defmodule OeditusCredo.Check.Warning.InefficientFilter do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   defp traverse(ast, issues, issue_meta) do
     {ast, issues} = find_repo_all_with_filter(ast, issues, issue_meta)
@@ -96,6 +107,10 @@ defmodule OeditusCredo.Check.Warning.InefficientFilter do
 
   defp vars_match?({name, _, _}, {name, _, _}), do: true
   defp vars_match?(_, _), do: false
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no) do
     format_issue(

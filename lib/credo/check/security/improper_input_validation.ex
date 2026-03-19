@@ -27,7 +27,9 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
             User.changeset(%User{}, params)
             |> validate_required([:name])
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @sensitive_calls ~w[insert insert! update update! delete delete! query query!]
@@ -38,9 +40,18 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   defp traverse({:def, meta, [{_name, _, args}, [do: body]]} = ast, issues, issue_meta) do
     params_bound? = params_argument?(args)
@@ -111,10 +122,6 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
     Enum.any?(statements, &contains_validation?/1)
   end
 
-  defp contains_validation?({name, _, _args}) when is_atom(name) do
-    validation_name?(Atom.to_string(name))
-  end
-
   defp contains_validation?({{:., _, [{:__aliases__, _, parts}, name]}, _, _args})
        when is_list(parts) and is_atom(name) do
     validation_name?(Enum.join(parts, ".") <> "." <> Atom.to_string(name))
@@ -122,6 +129,10 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
 
   defp contains_validation?({:., _, [_left, right_name]}) when is_atom(right_name) do
     validation_name?(Atom.to_string(right_name))
+  end
+
+  defp contains_validation?({name, _, _args}) when is_atom(name) do
+    validation_name?(Atom.to_string(name))
   end
 
   defp contains_validation?({_, _, args}) when is_list(args) do
@@ -133,6 +144,10 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
   defp validation_name?(name) do
     down = String.downcase(name)
     Enum.any?(@validation_indicators, &String.contains?(down, &1))
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

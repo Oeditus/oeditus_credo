@@ -30,7 +30,9 @@ defmodule OeditusCredo.Check.Security.MissingCSRFProtection do
             plug :protect_from_forgery
           end
       """,
-      params: []
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
 
   @doc false
@@ -38,9 +40,18 @@ defmodule OeditusCredo.Check.Security.MissingCSRFProtection do
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   # pipeline :api do ... end
   defp traverse({:pipeline, meta, [pipe_name, [do: body]]} = ast, issues, issue_meta) do
@@ -131,6 +142,10 @@ defmodule OeditusCredo.Check.Security.MissingCSRFProtection do
   defp csrf_bypass_key?(:csrf_disabled), do: true
   defp csrf_bypass_key?("csrf_disabled"), do: true
   defp csrf_bypass_key?(_), do: false
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no, detail) do
     format_issue(

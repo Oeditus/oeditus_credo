@@ -32,6 +32,7 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp do
       This check detects calls to common HTTP clients: Req, HTTPoison, Finch, Tesla, :httpc
       """,
       params: [
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_http_modules:
           "Additional HTTP client tuples {module_parts, [functions]} to check (default: [])"
       ]
@@ -102,16 +103,22 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp do
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
-    extra = Params.get(params, :extra_http_modules, __MODULE__)
-    clients = @default_http_clients ++ extra
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, clients}))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      extra = Params.get(params, :extra_http_modules, __MODULE__)
+      clients = @default_http_clients ++ extra
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, clients}))
+    end
   end
 
   @doc false
   @impl true
-  def param_defaults, do: [extra_http_modules: []]
+  def param_defaults, do: [exclude_test_files: false, extra_http_modules: []]
 
   defp traverse(
          {:def, _, [{func_name, _, _}, [do: body]]} = ast,
@@ -228,6 +235,10 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp do
     Enum.any?(clients, fn {client_name, methods} ->
       client_name == client and method in methods
     end)
+  end
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, client, method, func_name) do

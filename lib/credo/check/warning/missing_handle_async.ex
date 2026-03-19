@@ -26,6 +26,7 @@ defmodule OeditusCredo.Check.Warning.MissingHandleAsync do
           end
       """,
       params: [
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_blocking_modules: "Additional module atoms to treat as blocking (default: [])"
       ]
     ]
@@ -36,16 +37,22 @@ defmodule OeditusCredo.Check.Warning.MissingHandleAsync do
   @impl true
   def run(%SourceFile{} = source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
-    extra = Params.get(params, :extra_blocking_modules, __MODULE__)
-    blocking = @default_blocking_modules ++ extra
 
-    source_file
-    |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, blocking}))
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      extra = Params.get(params, :extra_blocking_modules, __MODULE__)
+      blocking = @default_blocking_modules ++ extra
+
+      source_file
+      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, blocking}))
+    end
   end
 
   @doc false
   @impl true
-  def param_defaults, do: [extra_blocking_modules: []]
+  def param_defaults, do: [exclude_test_files: false, extra_blocking_modules: []]
 
   defp traverse(
          {:def, meta, [{:handle_event, _, _}, [do: body]]} = ast,
@@ -92,6 +99,10 @@ defmodule OeditusCredo.Check.Warning.MissingHandleAsync do
   end
 
   defp has_async_call?(_), do: false
+
+  defp test_file?(filename) do
+    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
+  end
 
   defp issue_for(issue_meta, line_no) do
     format_issue(

@@ -31,7 +31,7 @@ defmodule OeditusCredo.Check.Security.HardcodedCredentials do
           password = Application.fetch_env!(:my_app, :password)
       """,
       params: [
-        exclude_test_files: "Set to false to check test files (default: true)",
+        exclude_test_files: "Set to true to skip test files (default: false)",
         extra_credential_terms: "Additional credential name substrings to flag (default: [])"
       ]
     ]
@@ -63,7 +63,7 @@ defmodule OeditusCredo.Check.Security.HardcodedCredentials do
 
   @doc false
   @impl true
-  def param_defaults, do: [exclude_test_files: true, extra_credential_terms: []]
+  def param_defaults, do: [exclude_test_files: false, extra_credential_terms: []]
 
   # Detect literal strings for URL/IP patterns
   defp traverse({:<<>>, meta, [string]} = ast, issues, {issue_meta, _terms})

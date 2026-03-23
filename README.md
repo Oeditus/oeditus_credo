@@ -64,6 +64,10 @@ OeditusCredo provides 36 comprehensive custom Credo checks that detect common mi
 ### Security - Race Conditions ([CWE-367](https://cwe.mitre.org/data/definitions/367.html))
 - **TOCTOU** - Detects time-of-check/time-of-use patterns (File.exists? then File.read)
 
+## Important Note
+
+All these checks are somewhat opinionated and might produce false positives. If a warning does not apply to your specific case, you can suppress it with [`# credo:disable-for-next-line`](https://hexdocs.pm/credo/config_comments.html) or any other Credo config comment directive.
+
 ## Installation
 
 ### As a Project Dependency

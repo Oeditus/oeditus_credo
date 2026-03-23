@@ -22,6 +22,13 @@ defmodule OeditusCredo do
         ]
       }
 
+  > #### False Positives {: .warning}
+  >
+  > All these checks are somewhat opinionated and might produce false positives.
+  > If a warning does not apply to your specific case, suppress it with
+  > [`# credo:disable-for-next-line`](https://hexdocs.pm/credo/config_comments.html)
+  > or any other Credo config comment directive.
+
   ## Available Checks
 
   ### Error Handling

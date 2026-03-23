@@ -35,6 +35,8 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
   @sensitive_calls ~w[insert insert! update update! delete delete! query query!]
   @validation_indicators ~w[changeset validate validate_required validate_format cast sanitize]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -144,10 +146,6 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
   defp validation_name?(name) do
     down = String.downcase(name)
     Enum.any?(@validation_indicators, &String.contains?(down, &1))
-  end
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

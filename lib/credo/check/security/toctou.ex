@@ -36,6 +36,8 @@ defmodule OeditusCredo.Check.Security.TOCTOU do
   @check_functions ~w[exists? stat stat!]
   @use_functions ~w[read read! write write! rm rm! open stream! cp cp! rename rename!]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -112,10 +114,6 @@ defmodule OeditusCredo.Check.Security.TOCTOU do
         _ -> false
       end
     end
-  end
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

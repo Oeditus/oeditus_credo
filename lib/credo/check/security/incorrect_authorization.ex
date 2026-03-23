@@ -35,6 +35,8 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
   @sensitive_repo_calls ~w[delete delete! update update! insert insert!]
   @default_auth_indicators ~w[authorize authorize! can? permit? allowed? policy bodyguard]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -135,10 +137,6 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
   defp auth_name?(name, indicators) do
     down = String.downcase(name)
     Enum.any?(indicators, &String.contains?(down, &1))
-  end
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

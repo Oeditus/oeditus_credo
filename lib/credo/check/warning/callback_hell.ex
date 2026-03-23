@@ -34,6 +34,8 @@ defmodule OeditusCredo.Check.Warning.CallbackHell do
       ]
     ]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -92,10 +94,6 @@ defmodule OeditusCredo.Check.Warning.CallbackHell do
 
   defp count_nested_cases({:case, _, _} = ast), do: count_case_nesting(ast)
   defp count_nested_cases(_), do: 0
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
-  end
 
   defp issue_for(issue_meta, line_no, level) do
     format_issue(

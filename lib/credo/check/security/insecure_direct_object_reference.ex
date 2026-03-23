@@ -35,6 +35,8 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
   @repo_fetch_calls ~w[get get! get_by get_by!]
   @default_ownership_indicators ~w[current_user user_id owner_id authorize authorize! policy]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -142,10 +144,6 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
   defp ownership_name?(name, indicators) do
     down = String.downcase(name)
     Enum.any?(indicators, &String.contains?(down, &1))
-  end
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

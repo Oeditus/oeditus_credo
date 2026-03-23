@@ -41,6 +41,8 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
   @logging_mods [[:Logger], [:IO]]
   @logging_functions ~w[debug info warning warn error inspect puts]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -125,10 +127,6 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
   defp sensitive_name?(name, terms) when is_binary(name) do
     down = String.downcase(name)
     Enum.any?(terms, &String.contains?(down, &1))
-  end
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, trigger) do

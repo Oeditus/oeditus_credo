@@ -38,6 +38,8 @@ defmodule OeditusCredo.Check.Security.UnrestrictedFileUpload do
   @file_write_calls ~w[cp cp! copy copy! write write! rename rename!]
   @validation_indicators ~w[extname content_type extension mime_type allowed validate file_type]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -142,10 +144,6 @@ defmodule OeditusCredo.Check.Security.UnrestrictedFileUpload do
   defp validation_name?(name) do
     down = String.downcase(name)
     Enum.any?(@validation_indicators, &String.contains?(down, &1))
-  end
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

@@ -35,6 +35,8 @@ defmodule OeditusCredo.Check.Security.MissingCSRFProtection do
       ]
     ]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -142,10 +144,6 @@ defmodule OeditusCredo.Check.Security.MissingCSRFProtection do
   defp csrf_bypass_key?(:csrf_disabled), do: true
   defp csrf_bypass_key?("csrf_disabled"), do: true
   defp csrf_bypass_key?(_), do: false
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
-  end
 
   defp issue_for(issue_meta, line_no, detail) do
     format_issue(

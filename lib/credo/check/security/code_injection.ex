@@ -36,6 +36,8 @@ defmodule OeditusCredo.Check.Security.CodeInjection do
 
   @default_dangerous_functions [:eval_string, :eval_quoted, :eval_file]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -71,10 +73,6 @@ defmodule OeditusCredo.Check.Security.CodeInjection do
   end
 
   defp traverse(ast, issues, _ctx), do: {ast, issues}
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
-  end
 
   defp issue_for(issue_meta, line_no, func_name) do
     format_issue(

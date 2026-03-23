@@ -46,6 +46,8 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
 
   @default_sensitive_actions ~w[index show create new update edit delete destroy]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -135,10 +137,6 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
 
   defp plug_name_to_string(name) when is_atom(name), do: Atom.to_string(name)
   defp plug_name_to_string(_), do: ""
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
-  end
 
   defp issue_for(issue_meta, line_no, detail) do
     format_issue(

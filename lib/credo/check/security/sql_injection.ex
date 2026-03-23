@@ -34,6 +34,8 @@ defmodule OeditusCredo.Check.Security.SQLInjection do
 
   @sql_keywords ~w[SELECT INSERT UPDATE DELETE DROP CREATE ALTER TRUNCATE EXEC EXECUTE]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -137,10 +139,6 @@ defmodule OeditusCredo.Check.Security.SQLInjection do
   defp contains_sql_keyword?(str) when is_binary(str) do
     upper = String.upcase(str)
     Enum.any?(@sql_keywords, &String.contains?(upper, &1))
-  end
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

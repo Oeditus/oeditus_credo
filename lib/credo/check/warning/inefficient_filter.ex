@@ -24,6 +24,8 @@ defmodule OeditusCredo.Check.Warning.InefficientFilter do
       ]
     ]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -107,10 +109,6 @@ defmodule OeditusCredo.Check.Warning.InefficientFilter do
 
   defp vars_match?({name, _, _}, {name, _, _}), do: true
   defp vars_match?(_, _), do: false
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
-  end
 
   defp issue_for(issue_meta, line_no) do
     format_issue(

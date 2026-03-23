@@ -33,6 +33,8 @@ defmodule OeditusCredo.Check.Security.PathTraversal do
 
   @file_calls ~w[read read! write write! open stream! rm rm!]
 
+  import OeditusCredo.Helpers, only: [test_file?: 1]
+
   @doc false
   @impl true
   def run(%SourceFile{} = source_file, params) do
@@ -104,10 +106,6 @@ defmodule OeditusCredo.Check.Security.PathTraversal do
 
     String.contains?(down, "file") or String.contains?(down, "path") or
       String.contains?(down, "dir")
-  end
-
-  defp test_file?(filename) do
-    String.ends_with?(filename, "_test.exs") or String.contains?(filename, "/test/")
   end
 
   defp issue_for(issue_meta, line_no, detail) do

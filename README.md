@@ -1,4 +1,6 @@
-# ![logo-oeditus-credo-48x48](https://github.com/user-attachments/assets/f212dd0e-cca3-4309-b63d-1a55b5d640b4)  OeditusCredo
+<img src="https://raw.githubusercontent.com/Oeditus/oeditus_credo/v0.3.2/stuff/img/logo-oeditus-credo-128x128.png" alt="OeditusCredo" width="128" align="right">
+
+# OeditusCredo
 
 Custom Credo checks for detecting common Elixir/Phoenix anti-patterns, mistakes, and CWE Top 25 security vulnerabilities.
 

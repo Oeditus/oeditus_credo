@@ -22,6 +22,7 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
     OeditusCredo.Check.Security.HardcodedCredentials,
     OeditusCredo.Check.Security.OSCommandInjection
   ]
+
   # 
   # ── false param (disable check) ─────────────────────────────────────
 

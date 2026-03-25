@@ -189,9 +189,40 @@ mix credo
 
 All checks support configuration parameters. Pass them in `.credo.exs`:
 
-### Common Parameters
+### General (Credo-standard) Parameters
 
-Every check accepts the following parameter:
+Every check accepts the following general parameters provided by Credo:
+
+- **`false`** -- Disable a check entirely. When a check tuple uses `false` instead of a keyword list, the check is skipped and produces no issues.
+
+  ```elixir
+  # Disable a check
+  {OeditusCredo.Check.Warning.NPlusOneQuery, false}
+  ```
+
+- **`exit_status`** (`integer()`) -- Override the exit status contributed by issues from this check. By default, all checks in the `:warning` category contribute exit status `16`. Setting `exit_status: 0` means the check still runs and reports issues, but they will not cause a non-zero exit code.
+
+  ```elixir
+  # Run the check but don't fail CI on its issues
+  {OeditusCredo.Check.Warning.NPlusOneQuery, exit_status: 0}
+
+  # Custom exit status
+  {OeditusCredo.Check.Security.SQLInjection, exit_status: 2}
+  ```
+
+- **`priority`** -- Override the base priority for the check (`:low`, `:normal`, `:high`, `:higher`, or `:ignore`).
+
+- **`files`** -- Restrict which files the check runs on:
+
+  ```elixir
+  {OeditusCredo.Check.Security.SQLInjection, files: %{included: ["lib/my_app/repo.ex"]}}
+  ```
+
+These parameters can be combined with any check-specific parameters.
+
+### Common Check-Specific Parameters
+
+Every OeditusCredo check additionally accepts:
 
 - `exclude_test_files` (`boolean()`, default: `false`) -- When set to `true`, files ending in `_test.exs` or located under a `/test/` directory are skipped.
 
@@ -234,13 +265,20 @@ Every check accepts the following parameter:
 ### Example
 
 ```elixir
+# Customise check-specific params
 {OeditusCredo.Check.Warning.CallbackHell, [max_nesting: 3]},
 {OeditusCredo.Check.Warning.SyncOverAsync, [extra_blocking_modules: [:ExternalAPI]]},
 {OeditusCredo.Check.Security.CodeInjection, [extra_dangerous_functions: [:compile_string]]},
 {OeditusCredo.Check.Security.HardcodedCredentials, [exclude_test_files: true, extra_credential_terms: ["conn_string"]]},
 {OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp, [
   extra_http_modules: [{[:MyApp, :HTTP], [:get, :post]}]
-]}
+]},
+
+# Run check as advisory only (won't affect exit code)
+{OeditusCredo.Check.Warning.DirectStructUpdate, exit_status: 0},
+
+# Disable a check entirely
+{OeditusCredo.Check.Warning.InlineJavascript, false}
 ```
 
 ## Test Coverage

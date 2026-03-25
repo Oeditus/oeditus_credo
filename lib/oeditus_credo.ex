@@ -29,6 +29,23 @@ defmodule OeditusCredo do
   > [`# credo:disable-for-next-line`](https://hexdocs.pm/credo/config_comments.html)
   > or any other Credo config comment directive.
 
+  ## General Parameters
+
+  All checks support the standard Credo general parameters:
+
+  - **`false`** -- disable the check entirely:
+
+        {OeditusCredo.Check.Warning.NPlusOneQuery, false}
+
+  - **`exit_status`** -- override the exit status for issues from this check
+    (default is `16` for the `:warning` category). Set to `0` to make a check
+    advisory-only (still reports issues but won't affect the exit code):
+
+        {OeditusCredo.Check.Warning.NPlusOneQuery, exit_status: 0}
+
+  - **`priority`** -- override the base priority for the check.
+  - **`files`** -- restrict which files the check runs on.
+
   ## Available Checks
 
   ### Error Handling

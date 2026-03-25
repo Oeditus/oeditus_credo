@@ -55,7 +55,6 @@ defmodule OeditusCredo.CLI do
               {OeditusCredo.Check.Warning.InlineJavascript, []},
 
               ## Code Quality & Maintainability
-              {OeditusCredo.Check.Warning.HardcodedValue, []},
               {OeditusCredo.Check.Warning.DirectStructUpdate, []},
               {OeditusCredo.Check.Warning.CallbackHell, [max_nesting: 2]},
               {OeditusCredo.Check.Warning.BlockingInPlug, []},

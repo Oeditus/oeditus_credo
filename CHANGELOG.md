@@ -41,7 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `InlineJavascript` - Detects inline JS handlers instead of phx-* bindings
 
 #### Code Quality Checks (4)
-- `HardcodedValue` - Detects hardcoded URLs, IPs, and secrets
 - `DirectStructUpdate` - Detects direct struct updates instead of changesets
 - `CallbackHell` - Detects deeply nested case statements (suggests `with`)
 - `BlockingInPlug` - Detects blocking operations in Plug functions

@@ -99,7 +99,6 @@ The standalone installation automatically enables all 20 OeditusCredo checks:
 - InlineJavascript
 
 **Code Quality**
-- HardcodedValue
 - DirectStructUpdate
 - CallbackHell
 - BlockingInPlug

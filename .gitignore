@@ -30,4 +30,6 @@ oeditus_credo-*.tar
 /.elixir_ls/
 /.erl.history/
 
+/.aiassistant/rules/oeditus.md
+
 /priv/plts/

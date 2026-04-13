@@ -296,6 +296,99 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
       |> run_check(OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug, exit_status: 0)
       |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
     end
+
+    test "BlockingInPlug issues have exit_status 0 when configured" do
+      """
+      defmodule MyAppWeb.Plugs.LoadUser do
+        def load_user(conn, _opts) do
+          user = Repo.get!(User, conn.assigns.user_id)
+          assign(conn, :user, user)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(OeditusCredo.Check.Warning.BlockingInPlug, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "InefficientFilter issues have exit_status 0 when configured" do
+      """
+      defmodule MyModule do
+        def get_active_users do
+          users = Repo.all(User)
+          Enum.filter(users, & &1.active)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(OeditusCredo.Check.Warning.InefficientFilter, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "InlineJavascript issues have exit_status 0 when configured" do
+      source_file =
+        Credo.SourceFile.parse(
+          ~s|<button onclick="alert('hi')">Click</button>\n|,
+          "template.html.heex"
+        )
+
+      source_file
+      |> run_check(OeditusCredo.Check.Warning.InlineJavascript, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "MissingHandleAsync issues have exit_status 0 when configured" do
+      """
+      defmodule MyAppWeb.PostLive do
+        def handle_event("load", _params, socket) do
+          data = Repo.all(Post)
+          {:noreply, assign(socket, :posts, data)}
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(OeditusCredo.Check.Warning.MissingHandleAsync, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "MissingThrottle issues have exit_status 0 when configured" do
+      source_file =
+        Credo.SourceFile.parse(
+          ~s|<input type="text" phx-change="search" />\n|,
+          "form.html.heex"
+        )
+
+      source_file
+      |> run_check(OeditusCredo.Check.Warning.MissingThrottle, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "SyncOverAsync issues have exit_status 0 when configured" do
+      """
+      defmodule MyAppWeb.UserLive do
+        def handle_call(:get_user, _from, state) do
+          user = Repo.get!(User, state.id)
+          {:reply, user, state}
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(OeditusCredo.Check.Warning.SyncOverAsync, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "UnmanagedTask issues have exit_status 0 when configured" do
+      """
+      defmodule MyApp do
+        def do_work do
+          Task.async(fn -> heavy_computation() end)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(OeditusCredo.Check.Warning.UnmanagedTask, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
   end
 
   describe "exit_status: 0 for security checks" do
@@ -444,6 +537,58 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
       """
       |> to_source_file()
       |> run_check(OeditusCredo.Check.Security.XSSVulnerability, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "CodeInjection issues have exit_status 0 when configured" do
+      """
+      defmodule MyApp do
+        def evaluate(input) do
+          Code.eval_string(input)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(OeditusCredo.Check.Security.CodeInjection, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "ImproperInputValidation issues have exit_status 0 when configured" do
+      """
+      defmodule MyAppWeb.UserController do
+        def create(conn, params) do
+          Repo.insert!(params)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(OeditusCredo.Check.Security.ImproperInputValidation, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "OSCommandInjection issues have exit_status 0 when configured" do
+      """
+      defmodule MyApp do
+        def run(input) do
+          System.shell(input)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(OeditusCredo.Check.Security.OSCommandInjection, exit_status: 0)
+      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
+    end
+
+    test "UnrestrictedFileUpload issues have exit_status 0 when configured" do
+      """
+      defmodule MyApp do
+        def upload(conn, %{"file" => %Plug.Upload{}}) do
+          File.cp!("source", "/uploads/file")
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(OeditusCredo.Check.Security.UnrestrictedFileUpload, exit_status: 0)
       |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
     end
   end

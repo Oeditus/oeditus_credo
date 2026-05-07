@@ -3,8 +3,11 @@ defmodule OeditusCredo.Check.Warning.UnsafeMapAccessTest do
 
   alias OeditusCredo.Check.Warning.UnsafeMapAccess
 
-  # These tests require real files on disk so Typle can infer types.
-  # We use ExUnit's @tag :tmp_dir to get a per-test temp directory.
+  # These tests require Typle which needs Elixir 1.20+ type system.
+  # They are excluded on older versions via the :elixir_1_20 tag
+  # (see test_helper.exs).
+
+  @moduletag :elixir_1_20
 
   @tag :tmp_dir
   test "it should report issue for bracket access on a map literal", %{tmp_dir: tmp_dir} do

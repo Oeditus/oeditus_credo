@@ -30,6 +30,9 @@ OeditusCredo provides 36 comprehensive custom Credo checks that detect common mi
 - **CallbackHell** - Detects deeply nested case statements (suggests `with`)
 - **BlockingInPlug** - Detects blocking operations in Plug functions
 
+### Refactoring Suggestions
+- **SuggestFSM** - Detects imperative status/state management (suggests `Finitomata` or `:gen_statem`)
+
 ### Telemetry & Observability
 - **MissingTelemetryInObanWorker** - Detects Oban workers without telemetry instrumentation
 - **MissingTelemetryInLiveViewMount** - Detects LiveView mount/3 without telemetry events
@@ -143,6 +146,8 @@ Add the checks to your `.credo.exs` configuration:
           {OeditusCredo.Check.Warning.DirectStructUpdate, []},
           {OeditusCredo.Check.Warning.CallbackHell, [max_nesting: 2]},
           {OeditusCredo.Check.Warning.BlockingInPlug, []},
+          # Refactoring Suggestions
+          {OeditusCredo.Check.Refactoring.SuggestFSM, []},
           # Telemetry & Observability
           {OeditusCredo.Check.Warning.MissingTelemetryInObanWorker, []},
           {OeditusCredo.Check.Warning.MissingTelemetryInLiveViewMount, []},
@@ -232,6 +237,10 @@ Every OeditusCredo check additionally accepts:
 - **DirectStructUpdate**: `extra_struct_patterns` -- Additional regex strings for struct-like variable names (default: `[]`)
 - **BlockingInPlug**: `extra_blocking_modules` -- Additional module atoms to treat as blocking (default: `[]`)
 
+### Refactoring Suggestions
+
+- **SuggestFSM**: `status_field_names` -- Field names to watch (default: `[:status, :state]`); `min_states` -- Minimum distinct status values before flagging (default: `3`)
+
 ### LiveView & Concurrency
 
 - **SyncOverAsync**: `extra_blocking_modules` -- Additional blocking module atoms (default: `[]`); `callback_functions` -- Callback names to check (default: `[:handle_event, :handle_call, :handle_info, :handle_cast, :handle_continue]`)
@@ -289,7 +298,7 @@ The library includes comprehensive tests for all 36 checks. Run tests with:
 mix test
 ```
 
-Current test coverage: 92 tests covering all checks, including security vulnerability detection and telemetry instrumentation.
+Current test coverage: 103 tests covering all checks, including security vulnerability detection, telemetry instrumentation, and refactoring suggestions.
 
 ## Contributing
 

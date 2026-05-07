@@ -130,7 +130,11 @@ defmodule OeditusCredo.MixProject do
       homepage_url: @homepage_url,
       formatters: ["html", "epub"],
       groups_for_modules: groups_for_modules(),
-      nest_modules_by_prefix: [OeditusCredo.Check.Warning, OeditusCredo.Check.Security],
+      nest_modules_by_prefix: [
+        OeditusCredo.Check.Warning,
+        OeditusCredo.Check.Security,
+        OeditusCredo.Check.Refactoring
+      ],
       before_closing_body_tag: &before_closing_body_tag/1,
       authors: ["Oeditus Team"],
       canonical: "https://hexdocs.pm/oeditus_credo",
@@ -176,6 +180,9 @@ defmodule OeditusCredo.MixProject do
         OeditusCredo.Check.Warning.CallbackHell,
         OeditusCredo.Check.Warning.BlockingInPlug,
         OeditusCredo.Check.Warning.UnsafeMapAccess
+      ],
+      "Refactoring Suggestions": [
+        OeditusCredo.Check.Refactoring.SuggestFSM
       ],
       "Telemetry & Observability": [
         OeditusCredo.Check.Warning.MissingTelemetryInObanWorker,

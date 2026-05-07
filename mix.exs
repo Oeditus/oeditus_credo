@@ -65,6 +65,9 @@ defmodule OeditusCredo.MixProject do
       # Core dependency
       {:credo, "~> 1.7"},
 
+      # Optional: type-aware checks (Elixir 1.20+)
+      {:typle, "~> 0.3", optional: true},
+
       # Development and documentation
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:excoveralls, "~> 0.18", only: :test, runtime: false},
@@ -171,7 +174,8 @@ defmodule OeditusCredo.MixProject do
       "Code Quality": [
         OeditusCredo.Check.Warning.DirectStructUpdate,
         OeditusCredo.Check.Warning.CallbackHell,
-        OeditusCredo.Check.Warning.BlockingInPlug
+        OeditusCredo.Check.Warning.BlockingInPlug,
+        OeditusCredo.Check.Warning.UnsafeMapAccess
       ],
       "Telemetry & Observability": [
         OeditusCredo.Check.Warning.MissingTelemetryInObanWorker,

@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.BlockingInPlug do
+  @moduledoc """
+  Detects expensive blocking operations (Repo, HTTP, File) inside Plug
+  functions that accept `conn` as the first argument.
+
+  Blocking in a plug serialises the entire request pipeline; move heavy
+  work to the controller action, a background job, or an async task.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

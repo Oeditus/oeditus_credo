@@ -52,6 +52,7 @@ defmodule Mix.Tasks.OeditusAssistantRules do
       liveview_and_concurrency_rules(),
       code_quality_rules(),
       telemetry_rules(),
+      readability_rules(),
       security_injection_rules(),
       security_auth_rules(),
       security_data_protection_rules(),
@@ -428,6 +429,38 @@ defmodule Mix.Tasks.OeditusAssistantRules do
     """
   end
 
+  defp readability_rules do
+    """
+    ## Readability
+
+    ### Use non-interpolating (uppercase) sigils when there is no interpolation
+
+    When a sigil body contains no `\#{}` expressions, the lowercase variant
+    (`~s`, `~c`, `~w`, `~r`) is misleading -- it implies the content may be
+    dynamic when it is actually static. Use the uppercase variant instead
+    (`~S`, `~C`, `~W`, `~R`).
+
+    This is especially important when passing sigils to `raw/1` or
+    `Phoenix.HTML.raw/1`, where `~S` immediately signals to both the reader
+    and static analysers that the HTML is a compile-time constant and
+    therefore safe (see CWE-79).
+
+    Bad:
+    ```elixir
+    html = ~s"<div>static</div>"
+    fields = ~w"name email age"a
+    raw(~s"<br>")
+    ```
+
+    Good:
+    ```elixir
+    html = ~S"<div>static</div>"
+    fields = ~W"name email age"a
+    raw(~S"<br>")
+    ```
+    """
+  end
+
   defp security_injection_rules do
     """
     ## Security -- Injection
@@ -476,6 +509,10 @@ defmodule Mix.Tasks.OeditusAssistantRules do
     `raw/1` and `{:safe, ...}` bypass Phoenix's HTML escaping and enable
     XSS (CWE-79). Let Phoenix auto-escape by default.
 
+    When passing a static sigil to `raw/1`, always use the uppercase variant
+    (`~S` instead of `~s`) to make the compile-time nature obvious. See the
+    Readability section below.
+
     Bad:
     ```elixir
     raw(user_input)
@@ -485,6 +522,7 @@ defmodule Mix.Tasks.OeditusAssistantRules do
     Good:
     ```elixir
     content_tag(:div, user_input)
+    raw(~S"<br>")  # static content -- ~S makes this clear
     ```
     """
   end

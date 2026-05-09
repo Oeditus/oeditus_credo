@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.SwallowingException do
+  @moduledoc """
+  Detects `try/rescue` blocks where at least one rescue clause neither
+  logs the exception nor re-raises it.
+
+  Silently swallowing exceptions hides errors and makes debugging
+  extremely difficult; always log or re-raise.
+  """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,

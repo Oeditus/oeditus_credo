@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.MissingTelemetryInLiveViewMount do
+  @moduledoc """
+  Detects LiveView modules whose `mount/3` callback does not emit
+  `:telemetry` events.
+
+  Instrumenting mounts helps track which views are accessed, how long
+  initialisation takes, and where performance bottlenecks live.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

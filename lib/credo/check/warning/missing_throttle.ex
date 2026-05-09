@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.MissingThrottle do
+  @moduledoc """
+  Detects HEEx/LEEx form inputs with `phx-change`, `phx-keyup`, or
+  `phx-input` that lack a `phx-debounce` or `phx-throttle` attribute.
+
+  Without debouncing, every keystroke sends an event to the server,
+  causing unnecessary load and degraded responsiveness.
+  """
+
   use Credo.Check,
     base_priority: :low,
     category: :warning,

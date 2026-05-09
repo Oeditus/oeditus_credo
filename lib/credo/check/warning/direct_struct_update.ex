@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.DirectStructUpdate do
+  @moduledoc """
+  Detects direct struct updates and `Map.put/3` on struct-like variables
+  that bypass Ecto changeset validation.
+
+  Direct struct mutations skip validations, constraints, and callbacks
+  that changesets provide; prefer `Ecto.Changeset` pipelines.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

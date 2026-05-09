@@ -1,4 +1,17 @@
 defmodule OeditusCredo.Check.Warning.UnsafeMapAccess do
+  @moduledoc """
+  Detects bracket access (`map[:key]`) on maps with atom keys where
+  dot access (`map.key`) would be safer.
+
+  Bracket access silently returns `nil` on missing keys, letting
+  errors propagate far from the source. Dot access raises a
+  `KeyError` immediately and enables Elixir 1.20+ type-aware
+  key propagation.
+
+  Requires the `typle` package and Elixir >= 1.20; silently
+  skipped otherwise.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,
@@ -38,15 +51,14 @@ defmodule OeditusCredo.Check.Warning.UnsafeMapAccess do
   def run(%SourceFile{}, false), do: []
 
   def run(%SourceFile{} = source_file, params) do
-    if typle_available?() and elixir_sufficient?() do
-      if Params.get(params, :exclude_test_files, __MODULE__) and
-           test_file?(source_file.filename) do
-        []
-      else
-        run_with_typle(source_file, params)
-      end
+    with true <- typle_available?(),
+         true <- elixir_sufficient?(),
+         false <-
+           Params.get(params, :exclude_test_files, __MODULE__) and
+             test_file?(source_file.filename) do
+      run_with_typle(source_file, params)
     else
-      []
+      _ -> []
     end
   end
 
@@ -57,17 +69,13 @@ defmodule OeditusCredo.Check.Warning.UnsafeMapAccess do
   defp run_with_typle(source_file, params) do
     issue_meta = IssueMeta.for(source_file, params)
 
-    type_map =
-      case Typle.Inference.infer_file(source_file.filename) do
-        {:ok, %{types: types}} -> types
-        _ -> %{}
-      end
+    # credo:disable-for-lines:7
+    case apply(Typle.Inference, :infer_file, [source_file.filename]) do
+      {:ok, %{types: %{} = types}} when map_size(types) > 0 ->
+        Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta, types))
 
-    if map_size(type_map) == 0 do
-      []
-    else
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta, type_map))
+      _ ->
+        []
     end
   end
 

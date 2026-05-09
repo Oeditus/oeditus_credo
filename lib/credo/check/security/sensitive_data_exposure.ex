@@ -87,8 +87,31 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
   end
 
   defp args_contain_sensitive_data?(args, terms) do
-    Enum.any?(args, &contains_sensitive_data?(&1, terms))
+    Enum.any?(args, &sensitive_arg?(&1, terms))
   end
+
+  # Static string literal -- cannot leak runtime secrets
+  defp sensitive_arg?(str, _terms) when is_binary(str), do: false
+
+  # Keyword list (Logger structured metadata) -- check values, not keys
+  defp sensitive_arg?(list, terms) when is_list(list) do
+    Enum.any?(list, fn
+      {key, value} when is_atom(key) -> contains_sensitive_data?(value, terms)
+      other -> contains_sensitive_data?(other, terms)
+    end)
+  end
+
+  # Interpolated string -- only check dynamic (interpolated) parts
+  defp sensitive_arg?({:<<>>, _, parts}, terms) when is_list(parts) do
+    Enum.any?(parts, fn
+      part when is_binary(part) -> false
+      {_, _, _} = ast -> contains_sensitive_data?(ast, terms)
+      _ -> false
+    end)
+  end
+
+  # Everything else -- delegate to recursive check
+  defp sensitive_arg?(other, terms), do: contains_sensitive_data?(other, terms)
 
   defp contains_sensitive_data?({:inspect, _, inner_args}, terms) when is_list(inner_args) do
     Enum.any?(inner_args, &contains_sensitive_data?(&1, terms))
@@ -99,8 +122,10 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
     Enum.any?(inner_args, &contains_sensitive_data?(&1, terms))
   end
 
-  defp contains_sensitive_data?({{:., _, [left, attr]}, _, _args}, terms) when is_atom(attr) do
-    contains_sensitive_data?(left, terms) or sensitive_name?(Atom.to_string(attr), terms)
+  defp contains_sensitive_data?({{:., _, [left, attr]}, _, args}, terms) when is_atom(attr) do
+    contains_sensitive_data?(left, terms) or
+      sensitive_name?(Atom.to_string(attr), terms) or
+      (is_list(args) and Enum.any?(args, &contains_sensitive_data?(&1, terms)))
   end
 
   defp contains_sensitive_data?({:., _, [_left, attr]}, terms) when is_atom(attr) do
@@ -109,13 +134,14 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
 
   defp contains_sensitive_data?({:<<>>, _, parts}, terms) when is_list(parts) do
     Enum.any?(parts, fn
-      part when is_binary(part) -> sensitive_name?(part, terms)
+      part when is_binary(part) -> false
       {_, _, _} = ast -> contains_sensitive_data?(ast, terms)
       _ -> false
     end)
   end
 
-  defp contains_sensitive_data?({name, _, _args}, terms) when is_atom(name) do
+  defp contains_sensitive_data?({name, _, context}, terms)
+       when is_atom(name) and is_atom(context) do
     sensitive_name?(Atom.to_string(name), terms)
   end
 
@@ -123,7 +149,7 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
     Enum.any?(args, &contains_sensitive_data?(&1, terms))
   end
 
-  defp contains_sensitive_data?(str, terms) when is_binary(str), do: sensitive_name?(str, terms)
+  defp contains_sensitive_data?(str, _terms) when is_binary(str), do: false
   defp contains_sensitive_data?(_, _terms), do: false
 
   defp sensitive_name?(name, terms) when is_binary(name) do

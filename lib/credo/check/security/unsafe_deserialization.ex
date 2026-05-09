@@ -91,7 +91,13 @@ defmodule OeditusCredo.Check.Security.UnsafeDeserialization do
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
+  # Direct call: :erlang.binary_to_term(data, [:safe])
   defp safe_option_present?([_data, opts]) when is_list(opts) do
+    :safe in opts
+  end
+
+  # Piped call: data |> :erlang.binary_to_term([:safe])
+  defp safe_option_present?([opts]) when is_list(opts) do
     :safe in opts
   end
 

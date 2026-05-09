@@ -89,7 +89,7 @@ defmodule OeditusCredo.MixProject do
   defp description do
     """
     Custom Credo checks for common Elixir/Phoenix anti-patterns and
-    CWE Top 25 security vulnerabilities. Provides 36 comprehensive
+    CWE Top 25 security vulnerabilities. Provides 39 comprehensive
     checks covering code quality, error handling, performance, telemetry, and security
     (SQL injection, XSS, path traversal, CSRF, SSRF, hardcoded credentials, etc).
     """
@@ -133,7 +133,8 @@ defmodule OeditusCredo.MixProject do
       nest_modules_by_prefix: [
         OeditusCredo.Check.Warning,
         OeditusCredo.Check.Security,
-        OeditusCredo.Check.Refactoring
+        OeditusCredo.Check.Refactoring,
+        OeditusCredo.Check.Readability
       ],
       before_closing_body_tag: &before_closing_body_tag/1,
       authors: ["Oeditus Team"],
@@ -174,6 +175,9 @@ defmodule OeditusCredo.MixProject do
         OeditusCredo.Check.Warning.MissingHandleAsync,
         OeditusCredo.Check.Warning.MissingThrottle,
         OeditusCredo.Check.Warning.InlineJavascript
+      ],
+      Readability: [
+        OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil
       ],
       "Code Quality": [
         OeditusCredo.Check.Warning.DirectStructUpdate,

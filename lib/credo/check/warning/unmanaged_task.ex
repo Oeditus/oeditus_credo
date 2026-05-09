@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.UnmanagedTask do
+  @moduledoc """
+  Detects `Task.async/1` and `Task.start/1` calls
+    that are not managed by a `Task.Supervisor`.
+
+  Unsupervised tasks can crash silently and leak memory; use
+  `Task.Supervisor.async_nolink/2` or `start_child/2` instead.
+  """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,
@@ -46,7 +54,7 @@ defmodule OeditusCredo.Check.Warning.UnmanagedTask do
   def param_defaults, do: [exclude_test_files: false]
 
   defp traverse({{:., meta, [{:__aliases__, _, [:Task]}, func]}, _, _} = ast, issues, issue_meta)
-       when func in [:async, :start, :start_link] do
+       when func in [:async, :start] do
     {ast, [issue_for(issue_meta, meta[:line], func) | issues]}
   end
 
@@ -58,7 +66,7 @@ defmodule OeditusCredo.Check.Warning.UnmanagedTask do
     format_issue(
       issue_meta,
       message:
-        "Use Task.Supervisor.#{func}_nolink instead of Task.#{func} to prevent memory leaks",
+        "Use Task.Supervisor.async_nolink/{3,5} instead of Task.#{func} to prevent memory leaks",
       trigger: "Task.#{func}",
       line_no: line_no
     )

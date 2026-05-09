@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.InefficientFilter do
+  @moduledoc """
+  Detects `Repo.all/1` followed by `Enum.filter/2` (or `reject`, `find`,
+  `find_value`) on the same variable.
+
+  Filtering data in Elixir after fetching the entire table wastes memory
+  and I/O; use Ecto's `where/3` to filter in the database instead.
+  """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,

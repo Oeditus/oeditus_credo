@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.SilentErrorCase do
+  @moduledoc """
+  Detects `case` statements that only match `{:ok, _}` without an
+  error branch or catch-all clause.
+
+  A single-clause case on an ok-tuple will raise `CaseClauseError`
+  when the expression returns an error; always handle both outcomes.
+  """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,

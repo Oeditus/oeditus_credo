@@ -134,6 +134,88 @@ defmodule OeditusCredo.Check.Security.SecurityChecksTest do
     |> assert_issue()
   end
 
+  test "CWE-79: no issue for `raw` local variable" do
+    """
+    defmodule MyApp do
+      def show(content) do
+        raw = HtmlSanitizeEx.strip_tags(content)
+        Phoenix.HTML.raw(raw)
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    # Only the Phoenix.HTML.raw/1 call should trigger, not the `raw` variable
+    |> assert_issue(fn issue ->
+      assert issue.message =~ "Phoenix.HTML.raw/1"
+    end)
+  end
+
+  test "CWE-79: no issue for raw/1 with string literal" do
+    """
+    defmodule MyApp do
+      def show do
+        raw("<br>")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    |> refute_issues()
+  end
+
+  test "CWE-79: no issue for Phoenix.HTML.raw/1 with string literal" do
+    """
+    defmodule MyApp do
+      def show do
+        Phoenix.HTML.raw("<hr>")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    |> refute_issues()
+  end
+
+  test "CWE-79: no issue for raw/1 with ~S sigil" do
+    ~S"""
+    defmodule MyApp do
+      def show do
+        raw(~S"<br>")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    |> refute_issues()
+  end
+
+  test "CWE-79: no issue for raw/1 with ~s sigil without interpolation" do
+    ~S"""
+    defmodule MyApp do
+      def show do
+        raw(~s"<br>")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    |> refute_issues()
+  end
+
+  test "CWE-79: reports raw/1 with ~s sigil containing interpolation" do
+    ~S"""
+    defmodule MyApp do
+      def show(tag) do
+        raw(~s"<#{tag}>")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    |> assert_issue()
+  end
+
   test "CWE-79: no issue for regular functions" do
     """
     defmodule MyApp do
@@ -307,7 +389,78 @@ defmodule OeditusCredo.Check.Security.SecurityChecksTest do
     |> refute_issues()
   end
 
-  # ── CWE-798: Hardcoded Credentials ──────────────────────────────────
+  test "CWE-200: no issue for static string accidentally matching sensitive term" do
+    """
+    defmodule MyApp do
+      def process do
+        Logger.warning("Unknown message type in queue, skipping")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(SensitiveDataExposure)
+    |> refute_issues()
+  end
+
+  test "CWE-200: no issue for Logger with non-sensitive keyword metadata" do
+    """
+    defmodule MyApp do
+      def process(request_id, message_type) do
+        Logger.warning("Unknown message type",
+          request_id: request_id,
+          message_type: message_type
+        )
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(SensitiveDataExposure)
+    |> refute_issues()
+  end
+
+  test "CWE-200: reports Logger with sensitive value in keyword metadata" do
+    """
+    defmodule MyApp do
+      def login(user) do
+        Logger.info("login attempt",
+          user_id: user.id,
+          secret_token: user.secret_token
+        )
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(SensitiveDataExposure)
+    |> assert_issue()
+  end
+
+  test "CWE-200: no issue for interpolated string with only static text matching" do
+    ~S"""
+    defmodule MyApp do
+      def process(reason) do
+        Logger.warning("skipping step: #{reason}")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(SensitiveDataExposure)
+    |> refute_issues()
+  end
+
+  test "CWE-200: reports interpolated string with sensitive dynamic part" do
+    ~S"""
+    defmodule MyApp do
+      def process(token) do
+        Logger.info("auth: #{token}")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(SensitiveDataExposure)
+    |> assert_issue()
+  end
+
+  # ── CWE-798
 
   alias OeditusCredo.Check.Security.HardcodedCredentials
 
@@ -361,6 +514,21 @@ defmodule OeditusCredo.Check.Security.SecurityChecksTest do
     defmodule MyApp do
       def decode(data) do
         :erlang.binary_to_term(data, [:safe])
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(UnsafeDeserialization)
+    |> refute_issues()
+  end
+
+  test "CWE-502: no issue with :safe option in piped call" do
+    """
+    defmodule MyApp do
+      def decode(batch_key) do
+        batch_key
+        |> Base.decode64!(padding: false)
+        |> :erlang.binary_to_term([:safe])
       end
     end
     """

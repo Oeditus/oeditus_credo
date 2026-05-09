@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug do
+  @moduledoc """
+  Detects authentication/authorization plug modules whose `call/2`
+  function does not emit `:telemetry` events.
+
+  Instrumenting auth plugs helps track login attempts, success/failure
+  rates, and can surface security anomalies early.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

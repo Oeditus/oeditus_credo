@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp do
+  @moduledoc """
+  Detects external HTTP client calls (Req, HTTPoison, Finch, Tesla,
+  `:httpc`) that are not wrapped with `:telemetry` instrumentation.
+
+  Instrumenting HTTP requests helps track latency, failure rates, and
+  third-party service health.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

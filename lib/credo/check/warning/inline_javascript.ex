@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.InlineJavascript do
+  @moduledoc """
+  Detects inline JavaScript event handlers (`onclick`, `onchange`, etc.)
+  in HEEx/LEEx templates.
+
+  LiveView templates should use `phx-*` bindings instead of inline JS
+  handlers for server-side event handling.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

@@ -1,4 +1,11 @@
 defmodule OeditusCredo.Check.Warning.CallbackHell do
+  @moduledoc """
+  Detects deeply nested `case` statements that reduce readability.
+
+  Deeply nested case expressions ("callback hell") should be replaced
+  with `with` statements or pipe operators for clearer control flow.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

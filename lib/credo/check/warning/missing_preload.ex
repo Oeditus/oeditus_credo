@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.MissingPreload do
+  @moduledoc """
+  Detects Ecto query pipelines ending in `Repo.all/1` without a
+  `preload/2` step.
+
+  Accessing associations on results without preloading triggers lazy
+  N+1 queries; add `preload/2` to the query pipeline.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.MissingTelemetryInObanWorker do
+  @moduledoc """
+  Detects Oban worker modules whose `perform/1` callback does not emit
+  `:telemetry` events.
+
+  Instrumenting workers helps monitor job execution time, success/failure
+  rates, and aids production debugging.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

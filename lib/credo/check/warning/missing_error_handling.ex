@@ -1,4 +1,11 @@
 defmodule OeditusCredo.Check.Warning.MissingErrorHandling do
+  @moduledoc """
+  Detects `{:ok, result} = expr` pattern matches that will raise
+  `MatchError` when the expression returns an error tuple.
+
+  Use `case`, `with`, or explicit error-clause matching instead.
+  """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,

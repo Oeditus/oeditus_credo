@@ -6,6 +6,10 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
   general parameters: `false` (disable) and `exit_status`.
   """
 
+  @readability_checks [
+    OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil
+  ]
+
   @warning_checks [
     OeditusCredo.Check.Warning.BlockingInPlug,
     OeditusCredo.Check.Warning.CallbackHell,
@@ -52,7 +56,7 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
   # ── false param (disable check) ─────────────────────────────────────
 
   describe "false param disables check" do
-    for check <- @warning_checks ++ @security_checks do
+    for check <- @readability_checks ++ @warning_checks ++ @security_checks do
       module_name = check |> Module.split() |> List.last()
 
       test "#{module_name} returns no issues when params is false" do

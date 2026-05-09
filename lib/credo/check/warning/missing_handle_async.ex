@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.MissingHandleAsync do
+  @moduledoc """
+  Detects blocking operations inside LiveView `handle_event/3` callbacks
+  that do not use `start_async/3` or `assign_async/3`.
+
+  Blocking the LiveView process degrades responsiveness; offload heavy
+  work with the async patterns and handle results in `handle_async/3`.
+  """
+
   use Credo.Check,
     base_priority: :normal,
     category: :warning,

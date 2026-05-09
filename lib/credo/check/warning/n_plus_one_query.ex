@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.NPlusOneQuery do
+  @moduledoc """
+  Detects potential N+1 query patterns where `Enum.map/2` (or `each`,
+  `flat_map`, `reduce`) iterates over a collection and calls `Repo`
+  inside the callback.
+
+  Use Ecto's `preload/2` to batch-load associations in a single query.
+  """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,

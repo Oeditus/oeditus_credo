@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.TelemetryInRecursiveFunction do
+  @moduledoc """
+  Detects `:telemetry.execute/3` or `:telemetry.span/3` calls inside
+  functions that call themselves recursively.
+
+  Emitting telemetry on every recursive step causes metric spam and
+  performance degradation; wrap the entire recursive operation instead.
+  """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,

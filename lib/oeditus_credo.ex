@@ -63,6 +63,9 @@ defmodule OeditusCredo do
   - `OeditusCredo.Check.Warning.SyncOverAsync` - Detects blocking operations in LiveView/GenServer
   - `OeditusCredo.Check.Warning.MissingHandleAsync` - Detects blocking in handle_event without async pattern
 
+  ### Readability
+  - `OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil` - Detects `~s`/`~c`/`~w`/`~r` without interpolation (suggests `~S`/`~C`/`~W`/`~R`)
+
   ### Code Organization
   - `OeditusCredo.Check.Warning.DirectStructUpdate` - Detects struct updates instead of changesets
   - `OeditusCredo.Check.Warning.CallbackHell` - Detects chained case statements

@@ -1,4 +1,16 @@
 defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
+  @moduledoc """
+  Detects modules that manage entity lifecycle through imperative
+  status/state field manipulation and suggests using a finite state
+  machine library instead.
+
+  The check looks for Ecto Enum status fields, case-branching on
+  status values, imperative transitions (`put_change`, struct
+  updates), and transition-verb function names. When enough evidence
+  accumulates, it suggests replacing the pattern with `Finitomata`
+  or `:gen_statem`.
+  """
+
   use Credo.Check,
     base_priority: :low,
     category: :refactoring,

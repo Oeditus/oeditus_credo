@@ -1,4 +1,12 @@
 defmodule OeditusCredo.Check.Warning.SyncOverAsync do
+  @moduledoc """
+  Detects blocking operations (Repo, HTTP, File, System) inside
+  LiveView event handlers and GenServer callbacks.
+
+  Blocking these callbacks stalls the process and degrades
+  responsiveness; offload heavy work to async tasks or background jobs.
+  """
+
   use Credo.Check,
     base_priority: :high,
     category: :warning,

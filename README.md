@@ -6,7 +6,7 @@ Custom Credo checks for detecting common Elixir/Phoenix anti-patterns, mistakes,
 
 ## Overview
 
-OeditusCredo provides 36 comprehensive custom Credo checks that detect common mistakes and security vulnerabilities in Elixir and Phoenix projects:
+OeditusCredo provides 39 comprehensive custom Credo checks that detect common mistakes and security vulnerabilities in Elixir and Phoenix projects:
 
 ### Error Handling Anti-patterns
 - **MissingErrorHandling** - Detects `{:ok, x} =` pattern without error handling
@@ -25,10 +25,14 @@ OeditusCredo provides 36 comprehensive custom Credo checks that detect common mi
 - **MissingThrottle** - Detects form inputs without phx-debounce/throttle
 - **InlineJavascript** - Detects inline JS handlers instead of phx-* bindings
 
+### Readability
+- **UnnecessaryInterpolatingSigil** - Detects `~s`/`~c`/`~w`/`~r` without interpolation (suggests `~S`/`~C`/`~W`/`~R`)
+
 ### Code Quality & Maintainability
 - **DirectStructUpdate** - Detects direct struct updates instead of changesets
 - **CallbackHell** - Detects deeply nested case statements (suggests `with`)
 - **BlockingInPlug** - Detects blocking operations in Plug functions
+- **UnsafeMapAccess** - Detects bracket access on maps where dot access is safer (requires `typle` + Elixir >= 1.20)
 
 ### Refactoring Suggestions
 - **SuggestFSM** - Detects imperative status/state management (suggests `Finitomata` or `:gen_statem`)
@@ -142,10 +146,13 @@ Add the checks to your `.credo.exs` configuration:
           {OeditusCredo.Check.Warning.MissingHandleAsync, []},
           {OeditusCredo.Check.Warning.MissingThrottle, []},
           {OeditusCredo.Check.Warning.InlineJavascript, []},
+          # Readability
+          {OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil, []},
           # Code Quality
           {OeditusCredo.Check.Warning.DirectStructUpdate, []},
           {OeditusCredo.Check.Warning.CallbackHell, [max_nesting: 2]},
           {OeditusCredo.Check.Warning.BlockingInPlug, []},
+          {OeditusCredo.Check.Warning.UnsafeMapAccess, []},
           # Refactoring Suggestions
           {OeditusCredo.Check.Refactoring.SuggestFSM, []},
           # Telemetry & Observability
@@ -292,13 +299,13 @@ Every OeditusCredo check additionally accepts:
 
 ## Test Coverage
 
-The library includes comprehensive tests for all 36 checks. Run tests with:
+The library includes comprehensive tests for all 39 checks. Run tests with:
 
 ```bash
 mix test
 ```
 
-Current test coverage: 103 tests covering all checks, including security vulnerability detection, telemetry instrumentation, and refactoring suggestions.
+Run `mix test` to see the current test count and coverage.
 
 ## Contributing
 

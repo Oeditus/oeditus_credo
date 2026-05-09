@@ -1,8 +1,8 @@
 defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil do
   @moduledoc """
-  Checks for interpolating sigils (`~s`, `~c`, `~w`, `~r`) that contain no
+  Checks for interpolating sigils (`~s`, `~c`, `~w`) that contain no
   interpolation and could be replaced with their non-interpolating uppercase
-  counterparts (`~S`, `~C`, `~W`, `~R`).
+  counterparts (`~S`, `~C`, `~W`).
 
   Using the uppercase variant makes the intent explicit: the content is static
   and will never contain dynamic expressions. It also avoids accidental
@@ -23,8 +23,8 @@ defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil do
       Detects lowercase (interpolating) sigils that contain no interpolation.
 
       When a sigil body has no `\#{}` expressions, the lowercase variant
-      (`~s`, `~c`, `~w`, `~r`) behaves identically to its uppercase
-      counterpart (`~S`, `~C`, `~W`, `~R`), but misleads the reader into
+      (`~s`, `~c`, `~w`) behaves identically to its uppercase
+      counterpart (`~S`, `~C`, `~W`), but misleads the reader into
       expecting dynamic content.
 
       Bad:
@@ -51,8 +51,7 @@ defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil do
   @interpolating_sigils %{
     sigil_s: "~S",
     sigil_c: "~C",
-    sigil_w: "~W",
-    sigil_r: "~R"
+    sigil_w: "~W"
   }
 
   @doc false

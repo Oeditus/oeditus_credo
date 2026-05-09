@@ -26,7 +26,7 @@ OeditusCredo provides 39 comprehensive custom Credo checks that detect common mi
 - **InlineJavascript** - Detects inline JS handlers instead of phx-* bindings
 
 ### Readability
-- **UnnecessaryInterpolatingSigil** - Detects `~s`/`~c`/`~w`/`~r` without interpolation (suggests `~S`/`~C`/`~W`/`~R`)
+- **UnnecessaryInterpolatingSigil** - Detects `~s`/`~c`/`~w` without interpolation (suggests `~S`/`~C`/`~W`)
 
 ### Code Quality & Maintainability
 - **DirectStructUpdate** - Detects direct struct updates instead of changesets

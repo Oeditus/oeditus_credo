@@ -436,9 +436,9 @@ defmodule Mix.Tasks.OeditusAssistantRules do
     ### Use non-interpolating (uppercase) sigils when there is no interpolation
 
     When a sigil body contains no `\#{}` expressions, the lowercase variant
-    (`~s`, `~c`, `~w`, `~r`) is misleading -- it implies the content may be
+    (`~s`, `~c`, `~w`) is misleading -- it implies the content may be
     dynamic when it is actually static. Use the uppercase variant instead
-    (`~S`, `~C`, `~W`, `~R`).
+    (`~S`, `~C`, `~W`).
 
     This is especially important when passing sigils to `raw/1` or
     `Phoenix.HTML.raw/1`, where `~S` immediately signals to both the reader

@@ -64,7 +64,7 @@ defmodule OeditusCredo do
   - `OeditusCredo.Check.Warning.MissingHandleAsync` - Detects blocking in handle_event without async pattern
 
   ### Readability
-  - `OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil` - Detects `~s`/`~c`/`~w`/`~r` without interpolation (suggests `~S`/`~C`/`~W`/`~R`)
+  - `OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil` - Detects `~s`/`~c`/`~w` without interpolation (suggests `~S`/`~C`/`~W`)
 
   ### Code Organization
   - `OeditusCredo.Check.Warning.DirectStructUpdate` - Detects struct updates instead of changesets

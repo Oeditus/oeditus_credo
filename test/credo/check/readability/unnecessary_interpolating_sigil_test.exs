@@ -68,33 +68,6 @@ defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigilTest do
     |> refute_issues()
   end
 
-  # ── ~r ──────────────────────────────────────────────────────────────
-
-  test "reports ~r without interpolation" do
-    ~S"""
-    defmodule MyApp do
-      @pattern ~r"^[a-z]+$"
-    end
-    """
-    |> to_source_file()
-    |> run_check(UnnecessaryInterpolatingSigil)
-    |> assert_issue(fn issue ->
-      assert issue.message =~ "~r"
-      assert issue.message =~ "~R"
-    end)
-  end
-
-  test "no issue for ~r with interpolation" do
-    ~S"""
-    defmodule MyApp do
-      def pattern(suffix), do: ~r"^[a-z]+#{suffix}$"
-    end
-    """
-    |> to_source_file()
-    |> run_check(UnnecessaryInterpolatingSigil)
-    |> refute_issues()
-  end
-
   # ── ~c ──────────────────────────────────────────────────────────────
 
   test "reports ~c without interpolation" do

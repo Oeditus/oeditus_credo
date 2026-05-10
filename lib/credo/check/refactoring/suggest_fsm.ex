@@ -112,8 +112,11 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
          issues,
          {issue_meta, status_fields, min_states}
        ) do
+    # Pass 0: resolve module attribute definitions (@statuses, etc.)
+    attr_map = collect_module_attributes(body)
+
     # Pass 1: collect schema status fields and their declared states
-    schema_states = collect_schema_states(body, status_fields)
+    schema_states = collect_schema_states(body, status_fields, attr_map)
 
     # Pass 2: collect branching sites on status fields
     branching_evidence = collect_branching(body, status_fields)
@@ -156,10 +159,84 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
 
   defp traverse_module(ast, issues, _state), do: {ast, issues}
 
+  # --- Pass 0: Module attribute collection ---
+
+  defp collect_module_attributes(body) do
+    {_, attrs} =
+      Macro.prewalk(body, %{}, fn
+        # @attr_name [literal_list]
+        {:@, _, [{attr_name, _, [list]}]} = ast, acc
+        when is_atom(attr_name) and is_list(list) ->
+          atoms = Enum.filter(list, &is_atom/1)
+
+          if atoms != [] do
+            {ast, Map.put(acc, attr_name, atoms)}
+          else
+            {ast, acc}
+          end
+
+        # @attr_name ~W(...)a  --  the sigil expands to a list at AST level
+        {:@, _, [{attr_name, _, [{:sigil_W, _, _} = sigil]}]} = ast, acc
+        when is_atom(attr_name) ->
+          atoms = extract_sigil_atoms(sigil)
+
+          if atoms != [] do
+            {ast, Map.put(acc, attr_name, atoms)}
+          else
+            {ast, acc}
+          end
+
+        # @attr_name ~w(...)a  --  lowercase sigil variant
+        {:@, _, [{attr_name, _, [{:sigil_w, _, _} = sigil]}]} = ast, acc
+        when is_atom(attr_name) ->
+          atoms = extract_sigil_atoms(sigil)
+
+          if atoms != [] do
+            {ast, Map.put(acc, attr_name, atoms)}
+          else
+            {ast, acc}
+          end
+
+        ast, acc ->
+          {ast, acc}
+      end)
+
+    attrs
+  end
+
+  defp extract_sigil_atoms({sigil_name, meta, _} = sigil)
+       when sigil_name in [:sigil_W, :sigil_w] do
+    modifier = Keyword.get(meta, :delimiter, "") |> detect_modifier(sigil)
+
+    if modifier == "a" do
+      case sigil do
+        {_, _, [{:<<>>, _, [str]}, []]} when is_binary(str) ->
+          str |> String.split() |> Enum.map(&String.to_atom/1)
+
+        {_, _, [{:<<>>, _, [str]}, [?a]]} when is_binary(str) ->
+          str |> String.split() |> Enum.map(&String.to_atom/1)
+
+        _ ->
+          []
+      end
+    else
+      []
+    end
+  end
+
+  defp extract_sigil_atoms(_), do: []
+
+  # The modifier for ~W(...)a / ~w(...)a appears as the second element
+  # of the sigil tuple args (a charlist like [?a]).
+  defp detect_modifier(_delimiter, {_, _, [_str, [?a]]}), do: "a"
+  defp detect_modifier(_delimiter, _), do: ""
+
   # --- Pass 1: Schema status fields ---
 
-  defp collect_schema_states(body, status_fields) do
-    {_, states} = Macro.prewalk(body, MapSet.new(), &find_schema_fields(&1, &2, status_fields))
+  defp collect_schema_states(body, status_fields, attr_map) do
+    {_, states} =
+      Macro.prewalk(body, MapSet.new(), &find_schema_fields(&1, &2, status_fields, attr_map))
+
     states
   end
 
@@ -167,11 +244,12 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
   defp find_schema_fields(
          {:field, _, [field_name, {:__aliases__, _, [:Ecto, :Enum]}, opts]} = ast,
          acc,
-         status_fields
+         status_fields,
+         attr_map
        )
        when is_atom(field_name) do
     if field_name in status_fields do
-      values = extract_enum_values(opts)
+      values = extract_enum_values(opts, attr_map)
       {ast, Enum.reduce(values, acc, &MapSet.put(&2, &1))}
     else
       {ast, acc}
@@ -179,19 +257,23 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
   end
 
   # field :status, Ecto.Enum (without keyword opts -- less common but possible)
-  defp find_schema_fields(ast, acc, _status_fields), do: {ast, acc}
+  defp find_schema_fields(ast, acc, _status_fields, _attr_map), do: {ast, acc}
 
-  defp extract_enum_values(opts) when is_list(opts) do
+  defp extract_enum_values(opts, attr_map) when is_list(opts) do
     case Keyword.get(opts, :values) do
       values when is_list(values) ->
         Enum.filter(values, &is_atom/1)
+
+      # values: @attr_name -- module attribute reference
+      {:@, _, [{attr_name, _, _}]} when is_atom(attr_name) ->
+        Map.get(attr_map, attr_name, [])
 
       _ ->
         []
     end
   end
 
-  defp extract_enum_values(_), do: []
+  defp extract_enum_values(_, _attr_map), do: []
 
   # --- Pass 2: Branching on status ---
 
@@ -211,6 +293,29 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
         # case status do ... end (bare variable named status/state)
         {:case, _, [{field, _, context}, [do: clauses]]} = ast, acc
         when is_atom(field) and is_atom(context) ->
+          if field in status_fields do
+            states = extract_clause_atoms(clauses)
+            {ast, %{acc | count: acc.count + 1, states: MapSet.union(acc.states, states)}}
+          else
+            {ast, acc}
+          end
+
+        # case get_field(changeset, :status) do ... end
+        {:case, _, [{accessor, _, [_changeset, field]}, [do: clauses]]} = ast, acc
+        when accessor in [:get_field, :get_change, :fetch_field!] and is_atom(field) ->
+          if field in status_fields do
+            states = extract_clause_atoms(clauses)
+            {ast, %{acc | count: acc.count + 1, states: MapSet.union(acc.states, states)}}
+          else
+            {ast, acc}
+          end
+
+        # case Map.get(record, :status) do ... end
+        {:case, _,
+         [{{:., _, [{:__aliases__, _, [:Map]}, :get]}, _, [_record, field]}, [do: clauses]]} =
+            ast,
+        acc
+        when is_atom(field) ->
           if field in status_fields do
             states = extract_clause_atoms(clauses)
             {ast, %{acc | count: acc.count + 1, states: MapSet.union(acc.states, states)}}
@@ -251,7 +356,7 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
   defp collect_transitions(body, status_fields) do
     {_, evidence} =
       Macro.prewalk(body, %{count: 0, states: MapSet.new()}, fn
-        # put_change(changeset, :status, :value)
+        # put_change(changeset, :status, :value) -- non-piped, 3 args
         {:put_change, _, [_cs, field, value]} = ast, acc when is_atom(field) ->
           if field in status_fields and is_atom(value) and value not in [true, false, nil] do
             {ast, %{acc | count: acc.count + 1, states: MapSet.put(acc.states, value)}}
@@ -259,8 +364,42 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
             {ast, acc}
           end
 
-        # Ecto.Changeset.change(record, status: :value) or change(record, %{status: :value})
+        # |> put_change(:status, :value) -- piped, 2 args (first arg is implicit)
+        {:put_change, _, [field, value]} = ast, acc when is_atom(field) ->
+          if field in status_fields and is_atom(value) and value not in [true, false, nil] do
+            {ast, %{acc | count: acc.count + 1, states: MapSet.put(acc.states, value)}}
+          else
+            {ast, acc}
+          end
+
+        # force_change(changeset, :status, :value) -- non-piped, 3 args
+        {:force_change, _, [_cs, field, value]} = ast, acc when is_atom(field) ->
+          if field in status_fields and is_atom(value) and value not in [true, false, nil] do
+            {ast, %{acc | count: acc.count + 1, states: MapSet.put(acc.states, value)}}
+          else
+            {ast, acc}
+          end
+
+        # |> force_change(:status, :value) -- piped, 2 args
+        {:force_change, _, [field, value]} = ast, acc when is_atom(field) ->
+          if field in status_fields and is_atom(value) and value not in [true, false, nil] do
+            {ast, %{acc | count: acc.count + 1, states: MapSet.put(acc.states, value)}}
+          else
+            {ast, acc}
+          end
+
+        # Ecto.Changeset.change(record, status: :value) -- non-piped
         {:change, _, [_record, updates]} = ast, acc when is_list(updates) ->
+          new_states = extract_status_from_keyword(updates, status_fields)
+
+          if MapSet.size(new_states) > 0 do
+            {ast, %{acc | count: acc.count + 1, states: MapSet.union(acc.states, new_states)}}
+          else
+            {ast, acc}
+          end
+
+        # |> change(status: :value) -- piped, 1 arg (keyword list)
+        {:change, _, [updates]} = ast, acc when is_list(updates) ->
           new_states = extract_status_from_keyword(updates, status_fields)
 
           if MapSet.size(new_states) > 0 do

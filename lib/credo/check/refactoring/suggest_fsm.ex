@@ -353,6 +353,7 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
 
   # --- Pass 3: Imperative transitions ---
 
+  # credo:disable-for-lines:71
   defp collect_transitions(body, status_fields) do
     {_, evidence} =
       Macro.prewalk(body, %{count: 0, states: MapSet.new()}, fn

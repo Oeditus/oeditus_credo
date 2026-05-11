@@ -9,6 +9,10 @@ defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil do
   interpolation if a `#{}` sequence is later added to what was meant to be a
   literal string.
 
+  The check also skips sigils whose body contains backslash escape sequences
+  (e.g. `\\n`, `\\t`), because switching to the uppercase variant would
+  preserve the literal backslash instead of interpreting the escape.
+
   This check is particularly relevant in combination with
   `OeditusCredo.Check.Security.XSSVulnerability` (CWE-79): when `raw/1` or
   `Phoenix.HTML.raw/1` receives a sigil argument, using the uppercase variant
@@ -22,10 +26,10 @@ defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil do
       check: """
       Detects lowercase (interpolating) sigils that contain no interpolation.
 
-      When a sigil body has no `\#{}` expressions, the lowercase variant
-      (`~s`, `~c`, `~w`) behaves identically to its uppercase
-      counterpart (`~S`, `~C`, `~W`), but misleads the reader into
-      expecting dynamic content.
+      When a sigil body has no `\#{}` expressions and no backslash escape
+      sequences, the lowercase variant (`~s`, `~c`, `~w`) behaves identically
+      to its uppercase counterpart (`~S`, `~C`, `~W`), but misleads the
+      reader into expecting dynamic content.
 
       Bad:
 
@@ -80,7 +84,7 @@ defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil do
            issues,
            issue_meta
          ) do
-      if Enum.all?(parts, &is_binary/1) do
+      if Enum.all?(parts, &is_binary/1) and not Enum.any?(parts, &String.contains?(&1, "\\")) do
         {ast,
          [
            issue_for(

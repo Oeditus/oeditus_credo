@@ -95,6 +95,63 @@ defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigilTest do
     |> refute_issues()
   end
 
+  # ── escape sequences ─────────────────────────────────────────────────
+
+  test "no issue for ~s with newline escape" do
+    ~S"""
+    defmodule MyApp do
+      def greeting, do: ~s"hello\nworld"
+    end
+    """
+    |> to_source_file()
+    |> run_check(UnnecessaryInterpolatingSigil)
+    |> refute_issues()
+  end
+
+  test "no issue for ~s with tab escape" do
+    ~S"""
+    defmodule MyApp do
+      def row, do: ~s"col1\tcol2"
+    end
+    """
+    |> to_source_file()
+    |> run_check(UnnecessaryInterpolatingSigil)
+    |> refute_issues()
+  end
+
+  test "no issue for ~s with backslash escape" do
+    ~S"""
+    defmodule MyApp do
+      def path, do: ~s"C:\\Users\\me"
+    end
+    """
+    |> to_source_file()
+    |> run_check(UnnecessaryInterpolatingSigil)
+    |> refute_issues()
+  end
+
+  test "no issue for ~c with escape sequence" do
+    ~S"""
+    defmodule MyApp do
+      def chars, do: ~c"hello\nworld"
+    end
+    """
+    |> to_source_file()
+    |> run_check(UnnecessaryInterpolatingSigil)
+    |> refute_issues()
+  end
+
+  test "no issue for ~w with escape sequence" do
+    ~S"""
+    defmodule MyApp do
+      @items ~w"foo\nbar baz"
+    end
+    """
+    |> to_source_file()
+    |> run_check(UnnecessaryInterpolatingSigil)
+    |> refute_issues()
+  end
+
   # ── edge cases ──────────────────────────────────────────────────────
 
   test "no issue for plain string literals" do

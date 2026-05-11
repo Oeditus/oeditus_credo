@@ -29,6 +29,7 @@ oeditus_credo-*.tar
 /.elixir-tools/
 /.elixir_ls/
 /.erl.history/
+/.zed/
 
 /.aiassistant/rules/oeditus.md
 

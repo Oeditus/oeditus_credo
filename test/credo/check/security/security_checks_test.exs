@@ -216,6 +216,58 @@ defmodule OeditusCredo.Check.Security.SecurityChecksTest do
     |> assert_issue()
   end
 
+  test "CWE-79: no issue for raw/1 with ~s sigil containing newline escape" do
+    ~S"""
+    defmodule MyApp do
+      def show do
+        raw(~s"<br>\n<hr>")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    |> refute_issues()
+  end
+
+  test "CWE-79: no issue for raw/1 with ~s sigil containing tab escape" do
+    ~S"""
+    defmodule MyApp do
+      def show do
+        raw(~s"col1\tcol2")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    |> refute_issues()
+  end
+
+  test "CWE-79: no issue for raw/1 with ~s sigil containing backslash escape" do
+    ~S"""
+    defmodule MyApp do
+      def show do
+        raw(~s"C:\\Users\\me")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    |> refute_issues()
+  end
+
+  test "CWE-79: no issue for Phoenix.HTML.raw/1 with ~s sigil containing escape" do
+    ~S"""
+    defmodule MyApp do
+      def show do
+        Phoenix.HTML.raw(~s"line1\nline2")
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(XSSVulnerability)
+    |> refute_issues()
+  end
+
   test "CWE-79: no issue for regular functions" do
     """
     defmodule MyApp do

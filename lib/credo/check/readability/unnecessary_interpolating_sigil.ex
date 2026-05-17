@@ -1,4 +1,10 @@
 defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil do
+  @interpolating_sigils Application.compile_env(:oeditus_credo, :interpolating_sigils, %{
+                          sigil_s: "~S",
+                          sigil_c: "~C",
+                          sigil_w: "~W"
+                        })
+
   @moduledoc """
   Checks for interpolating sigils (`~s`, `~c`, `~w`) that contain no
   interpolation and could be replaced with their non-interpolating uppercase
@@ -51,12 +57,6 @@ defmodule OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil do
     ]
 
   import OeditusCredo.Helpers, only: [test_file?: 1]
-
-  @interpolating_sigils %{
-    sigil_s: "~S",
-    sigil_c: "~C",
-    sigil_w: "~W"
-  }
 
   @doc false
   @impl true

@@ -4,7 +4,6 @@ defmodule OeditusCredo.Check.Warning.TelemetryChecksTest do
   alias OeditusCredo.Check.Warning.{
     MissingTelemetryForExternalHttp,
     MissingTelemetryInAuthPlug,
-    MissingTelemetryInLiveViewMount,
     MissingTelemetryInObanWorker,
     TelemetryInRecursiveFunction
   }
@@ -58,41 +57,6 @@ defmodule OeditusCredo.Check.Warning.TelemetryChecksTest do
     """
     |> to_source_file()
     |> run_check(MissingTelemetryInObanWorker)
-    |> refute_issues()
-  end
-
-  # MissingTelemetryInLiveViewMount tests
-
-  test "MissingTelemetryInLiveViewMount: reports issue for mount without telemetry" do
-    """
-    defmodule MyAppWeb.DashboardLive do
-      use MyAppWeb, :live_view
-
-      def mount(_params, _session, socket) do
-        data = load_data()
-        {:ok, assign(socket, data: data)}
-      end
-    end
-    """
-    |> to_source_file()
-    |> run_check(MissingTelemetryInLiveViewMount)
-    |> assert_issue()
-  end
-
-  test "MissingTelemetryInLiveViewMount: no issue when telemetry is present" do
-    """
-    defmodule MyAppWeb.DashboardLive do
-      use MyAppWeb, :live_view
-
-      def mount(_params, _session, socket) do
-        :telemetry.execute([:phoenix, :live_view, :mount], %{}, %{module: __MODULE__})
-        data = load_data()
-        {:ok, assign(socket, data: data)}
-      end
-    end
-    """
-    |> to_source_file()
-    |> run_check(MissingTelemetryInLiveViewMount)
     |> refute_issues()
   end
 

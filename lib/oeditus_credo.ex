@@ -77,7 +77,6 @@ defmodule OeditusCredo do
 
   ### Telemetry & Observability
   - `OeditusCredo.Check.Warning.MissingTelemetryInObanWorker` - Detects Oban workers without telemetry
-  - `OeditusCredo.Check.Warning.MissingTelemetryInLiveViewMount` - Detects LiveView mount/3 without telemetry
   - `OeditusCredo.Check.Warning.TelemetryInRecursiveFunction` - Detects telemetry in recursive functions (anti-pattern)
   - `OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug` - Detects auth plugs without telemetry
   - `OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp` - Detects HTTP calls without telemetry

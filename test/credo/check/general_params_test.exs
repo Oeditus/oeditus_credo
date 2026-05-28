@@ -21,7 +21,6 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
     OeditusCredo.Check.Warning.MissingPreload,
     OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp,
     OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug,
-    OeditusCredo.Check.Warning.MissingTelemetryInLiveViewMount,
     OeditusCredo.Check.Warning.MissingTelemetryInObanWorker,
     OeditusCredo.Check.Warning.MissingThrottle,
     OeditusCredo.Check.Warning.NPlusOneQuery,
@@ -264,22 +263,6 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
       """
       |> to_source_file()
       |> run_check(OeditusCredo.Check.Warning.MissingTelemetryInObanWorker, exit_status: 0)
-      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
-    end
-
-    test "MissingTelemetryInLiveViewMount issues have exit_status 0 when configured" do
-      """
-      defmodule MyAppWeb.DashboardLive do
-        use MyAppWeb, :live_view
-
-        def mount(_params, _session, socket) do
-          data = load_data()
-          {:ok, assign(socket, data: data)}
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(OeditusCredo.Check.Warning.MissingTelemetryInLiveViewMount, exit_status: 0)
       |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
     end
 

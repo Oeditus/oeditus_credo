@@ -224,8 +224,6 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
     end
   end
 
-  defp extract_sigil_atoms(_), do: []
-
   # The modifier for ~W(...)a / ~w(...)a appears as the second element
   # of the sigil tuple args (a charlist like [?a]).
   defp detect_modifier(_delimiter, {_, _, [_str, [?a]]}), do: "a"
@@ -436,8 +434,6 @@ defmodule OeditusCredo.Check.Refactoring.SuggestFSM do
         acc
     end)
   end
-
-  defp extract_status_from_keyword(_, _), do: MapSet.new()
 
   # --- Pass 4: Transition-verb functions ---
 

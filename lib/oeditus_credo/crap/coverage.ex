@@ -52,7 +52,6 @@ defmodule OeditusCredo.Crap.Coverage do
     case :cover.start() do
       {:ok, _pid} -> :ok
       {:error, {:already_started, _pid}} -> :ok
-      :ok -> :ok
       {:error, reason} -> {:error, reason}
     end
   end

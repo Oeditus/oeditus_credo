@@ -1,7 +1,7 @@
 defmodule OeditusCredo.MixProject do
   use Mix.Project
 
-  @version "0.6.4"
+  @version "0.7.0"
   @source_url "https://github.com/Oeditus/oeditus_credo"
   @homepage_url "https://oeditus.com"
 
@@ -32,7 +32,9 @@ defmodule OeditusCredo.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      # :tools provides :cover, used by the ChangeRiskAntiPatterns check to read
+      # persisted coverage data.
+      extra_applications: [:logger, :tools]
     ]
   end
 
@@ -89,8 +91,9 @@ defmodule OeditusCredo.MixProject do
   defp description do
     """
     Custom Credo checks for common Elixir/Phoenix anti-patterns and
-    CWE Top 25 security vulnerabilities. Provides 39 comprehensive
-    checks covering code quality, error handling, performance, telemetry, and security
+    CWE Top 25 security vulnerabilities. Provides 40 comprehensive
+    checks covering code quality, error handling, performance, change risk,
+    telemetry, and security
     (SQL injection, XSS, path traversal, CSRF, SSRF, hardcoded credentials, etc).
     """
   end
@@ -105,6 +108,7 @@ defmodule OeditusCredo.MixProject do
         README.md
         STANDALONE.md
         LICENSE
+        NOTICE.md
         CHANGELOG.md
       ),
       licenses: ["MIT"],
@@ -186,7 +190,8 @@ defmodule OeditusCredo.MixProject do
         OeditusCredo.Check.Warning.UnsafeMapAccess
       ],
       "Refactoring Suggestions": [
-        OeditusCredo.Check.Refactoring.SuggestFSM
+        OeditusCredo.Check.Refactoring.SuggestFSM,
+        OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns
       ],
       "Telemetry & Observability": [
         OeditusCredo.Check.Warning.MissingTelemetryInObanWorker,

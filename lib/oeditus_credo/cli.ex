@@ -65,7 +65,13 @@ defmodule OeditusCredo.CLI do
               {OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug, []},
               {OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp, []}
             ],
-            disabled: []
+            disabled: [
+              ## Change Risk Anti-Patterns (CRAP) score.
+              ## Opt-in: requires persisted coverage data. Run
+              ## `mix test --cover --export-coverage default` before this check,
+              ## then move it to `enabled` above.
+              {OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns, []}
+            ]
           }
         }
       ]

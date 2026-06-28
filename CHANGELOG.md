@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **ChangeRiskAntiPatterns** - New refactoring check that flags functions with a high CRAP (Change Risk Anti-Patterns) score by combining cyclomatic complexity with test coverage. Opt-in/disabled by default; requires running `mix test --cover --export-coverage default` before `mix credo`. Ports the scoring, complexity, and coverage logic from [ExCrap](https://github.com/germsvel/ex_crap) (MIT). See NOTICE.md for attribution.
 - **Standalone Escript** - Build standalone executable with `mix escript.build`
 - **Hex Archive Support** - Install globally with `mix archive.install`
 - **Mix Task** - `mix oeditus_credo` command with all checks pre-enabled
@@ -63,8 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test coverage reporting with ExCoveralls
 
 ### Licensing
-- Dual-licensed under GPLv3 and CC-BY-SA-4.0
-- Open-source use under GPLv3
-- Commercial license available for proprietary applications
+- Released under the MIT License
 
 [0.1.0]: https://github.com/oeditus/oeditus_credo/releases/tag/v0.1.0

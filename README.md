@@ -6,7 +6,7 @@ Custom Credo checks for detecting common Elixir/Phoenix anti-patterns, mistakes,
 
 ## Overview
 
-OeditusCredo provides 39 comprehensive custom Credo checks that detect common mistakes and security vulnerabilities in Elixir and Phoenix projects:
+OeditusCredo provides 40 comprehensive custom Credo checks that detect common mistakes, risky code, and security vulnerabilities in Elixir and Phoenix projects:
 
 ### Error Handling Anti-patterns
 - **MissingErrorHandling** - Detects `{:ok, x} =` pattern without error handling
@@ -36,6 +36,7 @@ OeditusCredo provides 39 comprehensive custom Credo checks that detect common mi
 
 ### Refactoring Suggestions
 - **SuggestFSM** - Detects imperative status/state management (suggests `Finitomata` or `:gen_statem`)
+- **ChangeRiskAntiPatterns** - Flags functions with a high CRAP score (both complex and under-tested). Opt-in/disabled by default; requires coverage data (see [Change Risk Anti-Patterns (CRAP) score](#change-risk-anti-patterns-crap-score)).
 
 ### Telemetry & Observability
 - **MissingTelemetryInObanWorker** - Detects Oban workers without telemetry instrumentation
@@ -197,6 +198,45 @@ Then run:
 mix credo
 ```
 
+## Change Risk Anti-Patterns (CRAP) score
+
+`ChangeRiskAntiPatterns` is **opt-in and disabled by default** because it needs
+test-coverage data that Credo cannot produce on its own. It combines each
+function's cyclomatic complexity with its test coverage:
+
+```
+CRAP = complexity^2 * (1 - coverage/100)^3 + complexity
+```
+
+A fully covered function scores its complexity; a complex, untested function
+scores much higher. The default maximum is `30` (the historical CRAP
+convention).
+
+> **IMPORTANT:** This check only works when run **after** generating persisted
+> coverage data. It reads `cover/default.coverdata`, which is produced by
+> `--export-coverage`:
+>
+> ```bash
+> mix test --cover --export-coverage default
+> mix credo
+> ```
+>
+> Plain `mix test --cover` prints a coverage report but does **not** leave an
+> importable coverage file, so it is not sufficient. When no coverage data is
+> found, the check does nothing by default (so it never breaks a `mix credo`
+> run launched without coverage). Set `require_coverage: true` to turn missing
+> coverage into a reported issue instead (useful in CI).
+
+Enable it in `.credo.exs`:
+
+```elixir
+{OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns, []}
+```
+
+Parameters: `max_score` (default `30`), `coverdata` (default
+`"cover/default.coverdata"`), `exclude_test_files` (default `true`),
+`require_coverage` (default `false`).
+
 ## Configuration Options
 
 All checks support configuration parameters. Pass them in `.credo.exs`:
@@ -247,6 +287,7 @@ Every OeditusCredo check additionally accepts:
 ### Refactoring Suggestions
 
 - **SuggestFSM**: `status_field_names` -- Field names to watch (default: `[:status, :state]`); `min_states` -- Minimum distinct status values before flagging (default: `3`)
+- **ChangeRiskAntiPatterns**: `max_score` -- Maximum CRAP score before a function is reported (default: `30`); `coverdata` -- Path to the persisted coverage file (default: `"cover/default.coverdata"`); `exclude_test_files` -- Skip test files (default: `true`); `require_coverage` -- Report an issue when coverage data is missing instead of skipping (default: `false`). See [Change Risk Anti-Patterns (CRAP) score](#change-risk-anti-patterns-crap-score) for the required workflow.
 
 ### LiveView & Concurrency
 
@@ -299,7 +340,7 @@ Every OeditusCredo check additionally accepts:
 
 ## Test Coverage
 
-The library includes comprehensive tests for all 39 checks. Run tests with:
+The library includes comprehensive tests for all 40 checks. Run tests with:
 
 ```bash
 mix test

@@ -60,7 +60,6 @@ defmodule OeditusCredo.CLI do
               {OeditusCredo.Check.Warning.BlockingInPlug, []},
 
               ## Telemetry & Observability
-              {OeditusCredo.Check.Warning.MissingTelemetryInObanWorker, []},
               {OeditusCredo.Check.Warning.TelemetryInRecursiveFunction, []},
               {OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug, []},
               {OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp, []}

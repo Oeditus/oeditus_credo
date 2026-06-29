@@ -104,7 +104,6 @@ The standalone installation automatically enables all 20 OeditusCredo checks:
 - BlockingInPlug
 
 **Telemetry & Observability**
-- MissingTelemetryInObanWorker
 - MissingTelemetryInLiveViewMount
 - TelemetryInRecursiveFunction
 - MissingTelemetryInAuthPlug

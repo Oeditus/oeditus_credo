@@ -194,7 +194,6 @@ defmodule OeditusCredo.MixProject do
         OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns
       ],
       "Telemetry & Observability": [
-        OeditusCredo.Check.Warning.MissingTelemetryInObanWorker,
         OeditusCredo.Check.Warning.MissingTelemetryInLiveViewMount,
         OeditusCredo.Check.Warning.TelemetryInRecursiveFunction,
         OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug,

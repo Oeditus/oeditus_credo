@@ -4,61 +4,8 @@ defmodule OeditusCredo.Check.Warning.TelemetryChecksTest do
   alias OeditusCredo.Check.Warning.{
     MissingTelemetryForExternalHttp,
     MissingTelemetryInAuthPlug,
-    MissingTelemetryInObanWorker,
     TelemetryInRecursiveFunction
   }
-
-  # MissingTelemetryInObanWorker tests
-
-  test "MissingTelemetryInObanWorker: reports issue for worker without telemetry" do
-    """
-    defmodule MyApp.Worker do
-      use Oban.Worker
-
-      def perform(%Oban.Job{args: args}) do
-        do_work(args)
-        :ok
-      end
-    end
-    """
-    |> to_source_file()
-    |> run_check(MissingTelemetryInObanWorker)
-    |> assert_issue()
-  end
-
-  test "MissingTelemetryInObanWorker: no issue when telemetry.span is used" do
-    """
-    defmodule MyApp.Worker do
-      use Oban.Worker
-
-      def perform(%Oban.Job{args: args}) do
-        :telemetry.span([:oban, :job, :execute], %{worker: __MODULE__}, fn ->
-          result = do_work(args)
-          {result, %{}}
-        end)
-      end
-    end
-    """
-    |> to_source_file()
-    |> run_check(MissingTelemetryInObanWorker)
-    |> refute_issues()
-  end
-
-  test "MissingTelemetryInObanWorker: no issue when telemetry.execute is used" do
-    """
-    defmodule MyApp.Worker do
-      use Oban.Worker
-
-      def perform(%Oban.Job{args: args}) do
-        :telemetry.execute([:oban, :job], %{}, %{worker: __MODULE__})
-        do_work(args)
-      end
-    end
-    """
-    |> to_source_file()
-    |> run_check(MissingTelemetryInObanWorker)
-    |> refute_issues()
-  end
 
   # TelemetryInRecursiveFunction tests
 

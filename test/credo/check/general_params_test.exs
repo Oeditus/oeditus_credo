@@ -21,7 +21,6 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
     OeditusCredo.Check.Warning.MissingPreload,
     OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp,
     OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug,
-    OeditusCredo.Check.Warning.MissingTelemetryInObanWorker,
     OeditusCredo.Check.Warning.MissingThrottle,
     OeditusCredo.Check.Warning.NPlusOneQuery,
     OeditusCredo.Check.Warning.SilentErrorCase,
@@ -247,22 +246,6 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
       """
       |> to_source_file()
       |> run_check(OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp, exit_status: 0)
-      |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
-    end
-
-    test "MissingTelemetryInObanWorker issues have exit_status 0 when configured" do
-      """
-      defmodule MyApp.Worker do
-        use Oban.Worker
-
-        def perform(%Oban.Job{args: args}) do
-          do_work(args)
-          :ok
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(OeditusCredo.Check.Warning.MissingTelemetryInObanWorker, exit_status: 0)
       |> assert_issue(fn issue -> assert issue.exit_status == 0 end)
     end
 

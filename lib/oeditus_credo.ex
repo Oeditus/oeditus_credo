@@ -76,7 +76,6 @@ defmodule OeditusCredo do
   - `OeditusCredo.Check.Warning.InlineJavascript` - Detects inline JS handlers instead of phx-* bindings
 
   ### Telemetry & Observability
-  - `OeditusCredo.Check.Warning.MissingTelemetryInObanWorker` - Detects Oban workers without telemetry
   - `OeditusCredo.Check.Warning.TelemetryInRecursiveFunction` - Detects telemetry in recursive functions (anti-pattern)
   - `OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug` - Detects auth plugs without telemetry
   - `OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp` - Detects HTTP calls without telemetry

@@ -39,7 +39,6 @@ OeditusCredo provides 40 comprehensive custom Credo checks that detect common mi
 - **ChangeRiskAntiPatterns** - Flags functions with a high CRAP score (both complex and under-tested). Opt-in/disabled by default; requires coverage data (see [Change Risk Anti-Patterns (CRAP) score](#change-risk-anti-patterns-crap-score)).
 
 ### Telemetry & Observability
-- **MissingTelemetryInObanWorker** - Detects Oban workers without telemetry instrumentation
 - **MissingTelemetryInLiveViewMount** - Detects LiveView mount/3 without telemetry events
 - **TelemetryInRecursiveFunction** - Detects telemetry inside recursive functions (anti-pattern)
 - **MissingTelemetryInAuthPlug** - Detects auth/authz plugs without telemetry
@@ -157,7 +156,6 @@ Add the checks to your `.credo.exs` configuration:
           # Refactoring Suggestions
           {OeditusCredo.Check.Refactoring.SuggestFSM, []},
           # Telemetry & Observability
-          {OeditusCredo.Check.Warning.MissingTelemetryInObanWorker, []},
           {OeditusCredo.Check.Warning.MissingTelemetryInLiveViewMount, []},
           {OeditusCredo.Check.Warning.TelemetryInRecursiveFunction, []},
           {OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug, []},

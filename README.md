@@ -86,7 +86,7 @@ Add `oeditus_credo` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:oeditus_credo, "~> 0.1.0", only: [:dev, :test], runtime: false}
+    {:oeditus_credo, "~> 0.8", only: [:dev, :test], runtime: false}
   ]
 end
 ```

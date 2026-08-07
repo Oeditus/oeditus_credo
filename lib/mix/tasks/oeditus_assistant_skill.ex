@@ -60,6 +60,7 @@ defmodule Mix.Tasks.OeditusAssistantSkill do
   defp default_output_path("openai"), do: ".openai/skills/oeditus/SKILL.md"
   defp default_output_path("gemini"), do: ".gemini/skills/oeditus/SKILL.md"
 
+  @spec raise_invalid_target(String.t()) :: no_return()
   defp raise_invalid_target(target) do
     Mix.raise(
       "Invalid target assistant: #{inspect(target)}. Expected one of: #{Enum.join(@valid_targets, ", ")}\n" <>
@@ -67,6 +68,7 @@ defmodule Mix.Tasks.OeditusAssistantSkill do
     )
   end
 
+  @spec raise_missing_target() :: no_return()
   defp raise_missing_target do
     Mix.raise(
       "Missing target assistant. Expected one of: #{Enum.join(@valid_targets, ", ")}\n" <>

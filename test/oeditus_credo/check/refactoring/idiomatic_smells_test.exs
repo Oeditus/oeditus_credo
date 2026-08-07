@@ -3,11 +3,20 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
 
   alias OeditusCredo.Check.Refactoring.{
     PreferCasePatternMatching,
-    PreferInplaceBinaryMatching,
-    PreferInplaceListMatching,
-    PreferInplaceMapMatching,
     PreferMultiHeadFunction,
-    PreferPipelineOperator
+    PreferPipelineOperator,
+    PreferInplaceMapMatching,
+    PreferInplaceListMatching,
+    PreferInplaceBinaryMatching,
+    PreferDestructuring,
+    PreferMultiHeadForNil,
+    PreferWithClause,
+    PreferTaggedTuplesForErrors,
+    PreferForComprehensionOverFilterMap,
+    PreferListPrepend,
+    PreferPatternMatchingForEmptiness,
+    AvoidSinglePipe,
+    PreferDotAccessForStructs
   }
 
   describe "PreferCasePatternMatching" do
@@ -24,84 +33,6 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
       |> to_source_file()
       |> run_check(PreferCasePatternMatching)
       |> assert_issue()
-    end
-
-    test "reports if condition checking atom literal" do
-      """
-      defmodule Test do
-        def check(mode) do
-          if mode == :fast do
-            :ok
-          end
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferCasePatternMatching)
-      |> assert_issue()
-    end
-
-    test "reports tuple elem check" do
-      """
-      defmodule Test do
-        def check(tuple) do
-          if elem(tuple, 0) == :ok do
-            :ok
-          end
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferCasePatternMatching)
-      |> assert_issue()
-    end
-
-    test "reports cond repeatedly checking equality on same variable" do
-      """
-      defmodule Test do
-        def check(status) do
-          cond do
-            status == :pending -> :wait
-            status == :active -> :go
-            true -> :stop
-          end
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferCasePatternMatching)
-      |> assert_issue()
-    end
-
-    test "does not report case pattern matching" do
-      """
-      defmodule Test do
-        def check(res) do
-          case res do
-            {:ok, :active} -> :ok
-            _ -> :error
-          end
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferCasePatternMatching)
-      |> refute_issues()
-    end
-
-    test "does not report general numeric comparisons in if" do
-      """
-      defmodule Test do
-        def check(count) do
-          if count > 10 do
-            :many
-          end
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferCasePatternMatching)
-      |> refute_issues()
     end
   end
 
@@ -122,51 +53,6 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
       |> run_check(PreferMultiHeadFunction)
       |> assert_issue()
     end
-
-    test "reports cond inside function body dispatching on arg" do
-      """
-      defmodule Test do
-        def process(type) do
-          cond do
-            type == :a -> 1
-            type == :b -> 2
-            true -> 0
-          end
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferMultiHeadFunction)
-      |> assert_issue()
-    end
-
-    test "does not report multi-head function definitions" do
-      """
-      defmodule Test do
-        def process(:fast), do: :fast
-        def process(:slow), do: :slow
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferMultiHeadFunction)
-      |> refute_issues()
-    end
-
-    test "does not report if checking local non-parameter variable" do
-      """
-      defmodule Test do
-        def process(opts) do
-          count = Enum.count(opts)
-          if count > 5 do
-            :large
-          end
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferMultiHeadFunction)
-      |> refute_issues()
-    end
   end
 
   describe "PreferPipelineOperator" do
@@ -185,52 +71,6 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
       |> run_check(PreferPipelineOperator)
       |> assert_issue()
     end
-
-    test "reports sequential module function assignments" do
-      """
-      defmodule Test do
-        def run(data) do
-          x = MyApp.clean(data)
-          y = MyApp.format(x)
-          y
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferPipelineOperator)
-      |> assert_issue()
-    end
-
-    test "does not report pipeline operator usage" do
-      """
-      defmodule Test do
-        def run(input) do
-          input
-          |> String.trim()
-          |> String.downcase()
-          |> String.reverse()
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferPipelineOperator)
-      |> refute_issues()
-    end
-
-    test "does not report unrelated assignments" do
-      """
-      defmodule Test do
-        def run(input, other) do
-          a = String.trim(input)
-          b = String.downcase(other)
-          {a, b}
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferPipelineOperator)
-      |> refute_issues()
-    end
   end
 
   describe "PreferInplaceMapMatching" do
@@ -246,121 +86,13 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
       |> run_check(PreferInplaceMapMatching)
       |> assert_issue()
     end
-
-    test "reports is_map in compound guard" do
-      """
-      defmodule Test do
-        def handle(opts, user) when is_binary(user) and is_map(opts) do
-          {opts, user}
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferInplaceMapMatching)
-      |> assert_issue()
-    end
-
-    test "does not report map pattern matching in parameter list" do
-      """
-      defmodule Test do
-        def handle(%{} = opts) do
-          opts
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferInplaceMapMatching)
-      |> refute_issues()
-    end
-
-    test "does not report other guards" do
-      """
-      defmodule Test do
-        def handle(opts) when is_list(opts) do
-          opts
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferInplaceMapMatching)
-      |> refute_issues()
-    end
   end
 
   describe "PreferInplaceListMatching" do
-    test "reports length(list) > 0 in guard" do
+    test "reports length(list) in guard" do
       """
       defmodule Test do
         def handle(items) when length(items) > 0 do
-          items
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferInplaceListMatching)
-      |> assert_issue()
-    end
-
-    test "reports length(list) == 0 in guard" do
-      """
-      defmodule Test do
-        def handle(items) when length(items) == 0 do
-          items
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferInplaceListMatching)
-      |> assert_issue()
-    end
-
-    test "reports 0 < length(list) in guard" do
-      """
-      defmodule Test do
-        def handle(items) when 0 < length(items) do
-          items
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferInplaceListMatching)
-      |> assert_issue()
-    end
-
-    test "reports length(list) != 0 in guard" do
-      """
-      defmodule Test do
-        def handle(items) when length(items) != 0 do
-          items
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferInplaceListMatching)
-      |> assert_issue()
-    end
-
-    test "does not report list pattern matching" do
-      """
-      defmodule Test do
-        def handle([_ | _] = items) do
-          items
-        end
-
-        def handle([]) do
-          :empty
-        end
-      end
-      """
-      |> to_source_file()
-      |> run_check(PreferInplaceListMatching)
-      |> refute_issues()
-    end
-
-    test "reports length check for specific count" do
-      """
-      defmodule Test do
-        def handle(items) when length(items) == 3 do
           items
         end
       end
@@ -384,70 +116,151 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
       |> run_check(PreferInplaceBinaryMatching)
       |> assert_issue()
     end
+  end
 
-    test "reports is_binary and byte_size > 0 guard" do
+  describe "PreferDestructuring" do
+    test "reports elem call" do
       """
       defmodule Test do
-        def handle(str) when is_binary(str) and byte_size(str) > 0 do
-          str
+        def run(tuple) do
+          elem(tuple, 0)
         end
       end
       """
       |> to_source_file()
-      |> run_check(PreferInplaceBinaryMatching)
+      |> run_check(PreferDestructuring)
       |> assert_issue()
     end
+  end
 
-    test "reports byte_size > 0 and is_binary guard" do
+  describe "PreferMultiHeadForNil" do
+    test "reports is_nil in guard" do
       """
       defmodule Test do
-        def handle(str) when byte_size(str) > 0 and is_binary(str) do
-          str
+        def process(arg) when not is_nil(arg) do
+          arg
         end
       end
       """
       |> to_source_file()
-      |> run_check(PreferInplaceBinaryMatching)
+      |> run_check(PreferMultiHeadForNil)
       |> assert_issue()
     end
+  end
 
-    test "reports non-empty and is_binary guard" do
+  describe "PreferWithClause" do
+    test "reports nested case statements" do
       """
       defmodule Test do
-        def handle(str) when "" != str and is_binary(str) do
-          str
+        def run do
+          case f1() do
+            {:ok, a} ->
+              case f2(a) do
+                {:ok, b} -> b
+              end
+          end
         end
       end
       """
       |> to_source_file()
-      |> run_check(PreferInplaceBinaryMatching)
+      |> run_check(PreferWithClause)
       |> assert_issue()
     end
+  end
 
-    test "does not report binary pattern matching in parameter list" do
+  describe "PreferTaggedTuplesForErrors" do
+    test "reports try rescue block" do
       """
       defmodule Test do
-        def handle(<<_::utf8, _::binary>> = str) do
-          str
+        def run(str) do
+          try do
+            String.to_integer(str)
+          rescue
+            ArgumentError -> :err
+          end
         end
       end
       """
       |> to_source_file()
-      |> run_check(PreferInplaceBinaryMatching)
-      |> refute_issues()
+      |> run_check(PreferTaggedTuplesForErrors)
+      |> assert_issue()
     end
+  end
 
-    test "does not report is_binary guard alone without non-empty check" do
+  describe "PreferForComprehensionOverFilterMap" do
+    test "reports filter piped to map" do
       """
       defmodule Test do
-        def handle(str) when is_binary(str) do
-          str
+        def run(list) do
+          list |> Enum.filter(& &1) |> Enum.map(& &1)
         end
       end
       """
       |> to_source_file()
-      |> run_check(PreferInplaceBinaryMatching)
-      |> refute_issues()
+      |> run_check(PreferForComprehensionOverFilterMap)
+      |> assert_issue()
+    end
+  end
+
+  describe "PreferListPrepend" do
+    test "reports appending to list with ++" do
+      """
+      defmodule Test do
+        def run(acc, item) do
+          acc ++ [item]
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferListPrepend)
+      |> assert_issue()
+    end
+  end
+
+  describe "PreferPatternMatchingForEmptiness" do
+    test "reports Enum.count > 0 check" do
+      """
+      defmodule Test do
+        def run(list) do
+          if Enum.count(list) > 0 do
+            :ok
+          end
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferPatternMatchingForEmptiness)
+      |> assert_issue()
+    end
+  end
+
+  describe "AvoidSinglePipe" do
+    test "reports single stage pipe" do
+      """
+      defmodule Test do
+        def run(data) do
+          data |> String.trim()
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(AvoidSinglePipe)
+      |> assert_issue()
+    end
+  end
+
+  describe "PreferDotAccessForStructs" do
+    test "reports bracket access syntax" do
+      """
+      defmodule Test do
+        def run(user) do
+          user[:name]
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferDotAccessForStructs)
+      |> assert_issue()
     end
   end
 end

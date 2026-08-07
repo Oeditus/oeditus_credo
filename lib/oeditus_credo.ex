@@ -73,6 +73,15 @@ defmodule OeditusCredo do
   - `OeditusCredo.Check.Refactoring.PreferInplaceMapMatching` - Detects `is_map/1` guard instead of inplace `%{} = map` pattern matching
   - `OeditusCredo.Check.Refactoring.PreferInplaceListMatching` - Detects O(N) `length/1` calls in guards instead of `[_ | _]` or `[]`
   - `OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching` - Detects `is_binary` non-empty guards instead of `<<_::utf8, _::binary>>`
+  - `OeditusCredo.Check.Refactoring.PreferDestructuring` - Detects `elem/2` or `Map.get/2` instead of pattern match destructuring
+  - `OeditusCredo.Check.Refactoring.PreferMultiHeadForNil` - Detects `is_nil` guards instead of multi-head matching on `nil`
+  - `OeditusCredo.Check.Refactoring.PreferWithClause` - Detects nested `case` statements (pyramid of doom) instead of `with`
+  - `OeditusCredo.Check.Refactoring.PreferTaggedTuplesForErrors` - Detects `try...rescue` control flow instead of tagged tuples
+  - `OeditusCredo.Check.Refactoring.PreferForComprehensionOverFilterMap` - Detects `Enum.filter |> Enum.map` instead of `for` comprehension
+  - `OeditusCredo.Check.Refactoring.PreferListPrepend` - Detects O(N) `list ++ [item]` appends instead of prepending `[item | list]`
+  - `OeditusCredo.Check.Refactoring.PreferPatternMatchingForEmptiness` - Detects `Enum.count(list) > 0` instead of `[_ | _]` or `[]`
+  - `OeditusCredo.Check.Refactoring.AvoidSinglePipe` - Detects single-stage `x |> f()` pipes instead of `f(x)`
+  - `OeditusCredo.Check.Refactoring.PreferDotAccessForStructs` - Detects `struct[:field]` bracket access instead of `struct.field`
   - `OeditusCredo.Check.Warning.DirectStructUpdate` - Detects struct updates instead of changesets
   - `OeditusCredo.Check.Warning.CallbackHell` - Detects chained case statements
   - `OeditusCredo.Check.Warning.BlockingInPlug` - Detects blocking operations in Plug functions

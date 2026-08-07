@@ -54,15 +54,56 @@ defmodule OeditusCredo.CLI do
               {OeditusCredo.Check.Warning.MissingThrottle, []},
               {OeditusCredo.Check.Warning.InlineJavascript, []},
 
+              ## Readability
+              {OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil, []},
+
               ## Code Quality & Maintainability
               {OeditusCredo.Check.Warning.DirectStructUpdate, []},
               {OeditusCredo.Check.Warning.CallbackHell, [max_nesting: 2]},
               {OeditusCredo.Check.Warning.BlockingInPlug, []},
 
+              ## Code Organization & Idiomatic Refactoring
+              {OeditusCredo.Check.Refactoring.SuggestFSM, []},
+              {OeditusCredo.Check.Refactoring.PreferCasePatternMatching, []},
+              {OeditusCredo.Check.Refactoring.PreferMultiHeadFunction, []},
+              {OeditusCredo.Check.Refactoring.PreferPipelineOperator, []},
+              {OeditusCredo.Check.Refactoring.PreferInplaceMapMatching, []},
+              {OeditusCredo.Check.Refactoring.PreferInplaceListMatching, []},
+              {OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching, []},
+
               ## Telemetry & Observability
               {OeditusCredo.Check.Warning.TelemetryInRecursiveFunction, []},
               {OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug, []},
-              {OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp, []}
+              {OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp, []},
+
+              ## Security - Injection
+              {OeditusCredo.Check.Security.SQLInjection, []},
+              {OeditusCredo.Check.Security.OSCommandInjection, []},
+              {OeditusCredo.Check.Security.CodeInjection, []},
+              {OeditusCredo.Check.Security.XSSVulnerability, []},
+
+              ## Security - Authentication & Authorization
+              {OeditusCredo.Check.Security.MissingAuthentication, []},
+              {OeditusCredo.Check.Security.MissingAuthorization, []},
+              {OeditusCredo.Check.Security.IncorrectAuthorization, []},
+              {OeditusCredo.Check.Security.InsecureDirectObjectReference, []},
+
+              ## Security - Data Protection
+              {OeditusCredo.Check.Security.SensitiveDataExposure, []},
+              {OeditusCredo.Check.Security.HardcodedCredentials, []},
+              {OeditusCredo.Check.Security.UnsafeDeserialization, []},
+
+              ## Security - Input & File Handling
+              {OeditusCredo.Check.Security.ImproperInputValidation, []},
+              {OeditusCredo.Check.Security.PathTraversal, []},
+              {OeditusCredo.Check.Security.UnrestrictedFileUpload, []},
+
+              ## Security - Web
+              {OeditusCredo.Check.Security.MissingCSRFProtection, []},
+              {OeditusCredo.Check.Security.SSRFVulnerability, []},
+
+              ## Security - Race Conditions
+              {OeditusCredo.Check.Security.TOCTOU, []}
             ],
             disabled: [
               ## Change Risk Anti-Patterns (CRAP) score.

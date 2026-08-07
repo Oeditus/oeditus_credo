@@ -6,7 +6,7 @@ Custom Credo checks for detecting common Elixir/Phoenix anti-patterns, mistakes,
 
 ## Overview
 
-OeditusCredo provides 40 comprehensive custom Credo checks that detect common mistakes, risky code, and security vulnerabilities in Elixir and Phoenix projects:
+OeditusCredo provides 46 comprehensive custom Credo checks that detect common mistakes, risky code, and security vulnerabilities in Elixir and Phoenix projects:
 
 ### Error Handling Anti-patterns
 - **MissingErrorHandling** - Detects `{:ok, x} =` pattern without error handling
@@ -33,6 +33,14 @@ OeditusCredo provides 40 comprehensive custom Credo checks that detect common mi
 - **CallbackHell** - Detects deeply nested case statements (suggests `with`)
 - **BlockingInPlug** - Detects blocking operations in Plug functions
 - **UnsafeMapAccess** - Detects bracket access on maps where dot access is safer (requires `typle` + Elixir >= 1.20)
+
+### Code Organization & Idiomatic Refactoring
+- **PreferCasePatternMatching** - Detects `if`/`cond` where `case` pattern matching is preferred
+- **PreferMultiHeadFunction** - Detects parameter branching inside function body instead of multi-head clauses
+- **PreferPipelineOperator** - Detects sequential assignments instead of pipe operator `|>`
+- **PreferInplaceMapMatching** - Detects `is_map/1` guard instead of inplace `%{} = map` pattern matching
+- **PreferInplaceListMatching** - Detects O(N) `length/1` calls in guards instead of `[_ | _]` or `[]`
+- **PreferInplaceBinaryMatching** - Detects `is_binary` non-empty guards instead of `<<_::utf8, _::binary>>`
 
 ### Refactoring Suggestions
 - **SuggestFSM** - Detects imperative status/state management (suggests `Finitomata` or `:gen_statem`)
@@ -151,7 +159,13 @@ Add the checks to your `.credo.exs` configuration:
           {OeditusCredo.Check.Warning.DirectStructUpdate, []},
           {OeditusCredo.Check.Warning.CallbackHell, [max_nesting: 2]},
           {OeditusCredo.Check.Warning.BlockingInPlug, []},
-          {OeditusCredo.Check.Warning.UnsafeMapAccess, []},
+          # Code Organization & Idiomatic Refactoring
+          {OeditusCredo.Check.Refactoring.PreferCasePatternMatching, []},
+          {OeditusCredo.Check.Refactoring.PreferMultiHeadFunction, []},
+          {OeditusCredo.Check.Refactoring.PreferPipelineOperator, []},
+          {OeditusCredo.Check.Refactoring.PreferInplaceMapMatching, []},
+          {OeditusCredo.Check.Refactoring.PreferInplaceListMatching, []},
+          {OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching, []},
           # Refactoring Suggestions
           {OeditusCredo.Check.Refactoring.SuggestFSM, []},
           # Telemetry & Observability
@@ -336,7 +350,7 @@ Every OeditusCredo check additionally accepts:
 
 ## Test Coverage
 
-The library includes comprehensive tests for all 40 checks. Run tests with:
+The library includes comprehensive tests for all 46 checks. Run tests with:
 
 ```bash
 mix test

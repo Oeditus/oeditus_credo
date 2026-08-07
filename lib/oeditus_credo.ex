@@ -66,7 +66,13 @@ defmodule OeditusCredo do
   ### Readability
   - `OeditusCredo.Check.Readability.UnnecessaryInterpolatingSigil` - Detects `~s`/`~c`/`~w` without interpolation (suggests `~S`/`~C`/`~W`)
 
-  ### Code Organization
+  ### Code Organization & Idiomatic Refactoring
+  - `OeditusCredo.Check.Refactoring.PreferCasePatternMatching` - Detects `if`/`cond` where `case` pattern matching is preferred
+  - `OeditusCredo.Check.Refactoring.PreferMultiHeadFunction` - Detects parameter branching inside function body instead of multi-head clauses
+  - `OeditusCredo.Check.Refactoring.PreferPipelineOperator` - Detects sequential assignments instead of pipe operator `|>`
+  - `OeditusCredo.Check.Refactoring.PreferInplaceMapMatching` - Detects `is_map/1` guard instead of inplace `%{} = map` pattern matching
+  - `OeditusCredo.Check.Refactoring.PreferInplaceListMatching` - Detects O(N) `length/1` calls in guards instead of `[_ | _]` or `[]`
+  - `OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching` - Detects `is_binary` non-empty guards instead of `<<_::utf8, _::binary>>`
   - `OeditusCredo.Check.Warning.DirectStructUpdate` - Detects struct updates instead of changesets
   - `OeditusCredo.Check.Warning.CallbackHell` - Detects chained case statements
   - `OeditusCredo.Check.Warning.BlockingInPlug` - Detects blocking operations in Plug functions

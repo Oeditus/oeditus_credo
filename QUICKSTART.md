@@ -35,13 +35,14 @@ mix oeditus_credo --all
 
 ## What It Checks
 
-OeditusCredo automatically runs 20 specialized checks:
+OeditusCredo automatically runs 44+ specialized custom checks across key categories:
 
 1. **Error Handling**: Missing error handling, silent errors, swallowed exceptions
-2. **Database**: N+1 queries, inefficient filters, missing preloads
-3. **LiveView**: Unmanaged tasks, blocking operations, missing throttling
-4. **Code Quality**: Hardcoded values, callback hell, blocking plugs
-5. **Telemetry**: Missing instrumentation, recursive telemetry anti-patterns
+2. **Database & Performance**: N+1 queries, inefficient filters, missing preloads
+3. **LiveView & Concurrency**: Unmanaged tasks, blocking operations, missing throttling, inline JS
+4. **Code Quality & Idiomatic Refactoring**: Struct updates, callback hell, blocking plugs, pattern matching, pipeline operator, multi-head functions, inplace matching
+5. **Telemetry & Observability**: Telemetry in recursive functions, auth plugs, external HTTP
+6. **Security & Vulnerabilities**: CWE Top 25 security checks (SQL injection, XSS, CSRF, IDOR, SSRF, command injection, path traversal, hardcoded credentials, TOCTOU)
 
 ## CI/CD Examples
 

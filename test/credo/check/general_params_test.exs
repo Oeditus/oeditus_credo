@@ -50,11 +50,21 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
     OeditusCredo.Check.Security.XSSVulnerability
   ]
 
+  @refactoring_checks [
+    OeditusCredo.Check.Refactoring.PreferCasePatternMatching,
+    OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching,
+    OeditusCredo.Check.Refactoring.PreferInplaceListMatching,
+    OeditusCredo.Check.Refactoring.PreferInplaceMapMatching,
+    OeditusCredo.Check.Refactoring.PreferMultiHeadFunction,
+    OeditusCredo.Check.Refactoring.PreferPipelineOperator,
+    OeditusCredo.Check.Refactoring.SuggestFSM
+  ]
+
   #
   # ── false param (disable check) ─────────────────────────────────────
 
   describe "false param disables check" do
-    for check <- @readability_checks ++ @warning_checks ++ @security_checks do
+    for check <- @readability_checks ++ @warning_checks ++ @security_checks ++ @refactoring_checks do
       module_name = check |> Module.split() |> List.last()
 
       test "#{module_name} returns no issues when params is false" do

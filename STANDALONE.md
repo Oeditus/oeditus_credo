@@ -79,7 +79,7 @@ mix oeditus_credo --help
 
 ## What's Included
 
-The standalone installation automatically enables all 20 OeditusCredo checks:
+The standalone installation automatically enables 43 OeditusCredo checks (plus opt-in CRAP scoring):
 
 **Error Handling**
 - MissingErrorHandling
@@ -98,16 +98,48 @@ The standalone installation automatically enables all 20 OeditusCredo checks:
 - MissingThrottle
 - InlineJavascript
 
-**Code Quality**
+**Readability**
+- UnnecessaryInterpolatingSigil
+
+**Code Quality & Maintainability**
 - DirectStructUpdate
 - CallbackHell
 - BlockingInPlug
+- UnsafeMapAccess
+
+**Code Organization & Idiomatic Refactoring**
+- PreferCasePatternMatching
+- PreferMultiHeadFunction
+- PreferPipelineOperator
+- PreferInplaceMapMatching
+- PreferInplaceListMatching
+- PreferInplaceBinaryMatching
+- SuggestFSM
+- ChangeRiskAntiPatterns (opt-in)
 
 **Telemetry & Observability**
-- MissingTelemetryInLiveViewMount
 - TelemetryInRecursiveFunction
 - MissingTelemetryInAuthPlug
 - MissingTelemetryForExternalHttp
+
+**Security Checks (CWE Top 25)**
+- SQLInjection
+- OSCommandInjection
+- CodeInjection
+- XSSVulnerability
+- MissingAuthentication
+- MissingAuthorization
+- IncorrectAuthorization
+- InsecureDirectObjectReference
+- SensitiveDataExposure
+- HardcodedCredentials
+- UnsafeDeserialization
+- ImproperInputValidation
+- PathTraversal
+- UnrestrictedFileUpload
+- MissingCSRFProtection
+- SSRFVulnerability
+- TOCTOU
 
 ## CI/CD Integration
 

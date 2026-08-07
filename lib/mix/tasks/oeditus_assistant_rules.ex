@@ -53,6 +53,7 @@ defmodule Mix.Tasks.OeditusAssistantRules do
       code_quality_rules(),
       telemetry_rules(),
       readability_rules(),
+      idiomatic_refactoring_rules(),
       security_injection_rules(),
       security_auth_rules(),
       security_data_protection_rules(),
@@ -457,6 +458,133 @@ defmodule Mix.Tasks.OeditusAssistantRules do
     html = ~S"<div>static</div>"
     fields = ~W"name email age"a
     raw(~S"<br>")
+    ```
+    """
+  end
+
+  defp idiomatic_refactoring_rules do
+    """
+    ## Code Organization and Idiomatic Refactoring
+
+    ### Prefer `case` pattern matching over `if` or `cond` structural equality checks
+
+    Using `if` or `cond` for tagged tuples, atoms, or repeating variable equality checks
+    obscures structural pattern matching. Use `case` pattern matching instead.
+
+    Bad:
+    ```elixir
+    if status == {:ok, data} do
+      process(data)
+    else
+      handle_error()
+    end
+    ```
+
+    Good:
+    ```elixir
+    case status do
+      {:ok, data} -> process(data)
+      _ -> handle_error()
+    end
+    ```
+
+    ### Prefer multi-head function clauses over branching on function parameters
+
+    Branching on function arguments inside the function body with `if` or `cond`
+    violates Elixir's multi-head function idiom.
+
+    Bad:
+    ```elixir
+    def process(mode) do
+      if mode == :fast do
+        run_fast()
+      else
+        run_slow()
+      end
+    end
+    ```
+
+    Good:
+    ```elixir
+    def process(:fast), do: run_fast()
+    def process(:slow), do: run_slow()
+    ```
+
+    ### Prefer pipeline operator `|>` over sequential variable assignments
+
+    Assigning intermediate results to temporary variables just to pass them
+    as the first argument in the next line is unidiomatic in Elixir.
+
+    Bad:
+    ```elixir
+    step1 = String.trim(input)
+    step2 = String.downcase(step1)
+    step3 = String.reverse(step2)
+    ```
+
+    Good:
+    ```elixir
+    input
+    |> String.trim()
+    |> String.downcase()
+    |> String.reverse()
+    ```
+
+    ### Prefer inplace map pattern matching `%{} = arg` over `is_map/1` guard
+
+    Guarding `is_map(arg)` in function definitions is redundant when you can pattern match
+    `%{}` or `%{} = arg` directly in the parameter list.
+
+    Bad:
+    ```elixir
+    def process(opts) when is_map(opts) do
+      ...
+    end
+    ```
+
+    Good:
+    ```elixir
+    def process(%{} = opts) do
+      ...
+    end
+    ```
+
+    ### Prefer inplace list pattern matching `[_ | _]` or `[]` over O(N) `length/1` in guards
+
+    Calling `length/1` in guards forces full O(N) list traversal.
+    Use pattern matching `[_ | _]` for non-empty lists or `[]` for empty lists instead.
+
+    Bad:
+    ```elixir
+    def process(items) when length(items) > 0 do
+      ...
+    end
+    ```
+
+    Good:
+    ```elixir
+    def process([_ | _] = items) do
+      ...
+    end
+    ```
+
+    ### Prefer inplace binary pattern matching `<<_::utf8, _::binary>>` over guard checks
+
+    Checking binary type and non-emptiness in guards can be replaced with direct
+    binary pattern matching in the function parameter list: `<<_::utf8, _::binary>>`.
+
+    Bad:
+    ```elixir
+    def process(str) when is_binary(str) and str != "" do
+      ...
+    end
+    ```
+
+    Good:
+    ```elixir
+    def process(<<_::utf8, _::binary>> = str) do
+      ...
+    end
     ```
     """
   end

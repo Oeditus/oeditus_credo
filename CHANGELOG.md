@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Idiomatic Refactoring Checks**:
+  - `PreferCasePatternMatching` - Detects `if`/`cond` where `case` pattern matching is preferred
+  - `PreferMultiHeadFunction` - Detects parameter branching inside function body instead of multi-head clauses
+  - `PreferPipelineOperator` - Detects sequential assignments instead of pipe operator `|>`
+  - `PreferInplaceMapMatching` - Detects `is_map/1` guard instead of inplace `%{} = map` pattern matching
+  - `PreferInplaceListMatching` - Detects O(N) `length/1` calls in guards instead of `[_ | _]` or `[]`
+  - `PreferInplaceBinaryMatching` - Detects `is_binary` non-empty guards instead of `<<_::utf8, _::binary>>`
 - **ChangeRiskAntiPatterns** - New refactoring check that flags functions with a high CRAP (Change Risk Anti-Patterns) score by combining cyclomatic complexity with test coverage. Opt-in/disabled by default; requires running `mix test --cover --export-coverage default` before `mix credo`. Ports the scoring, complexity, and coverage logic from [ExCrap](https://github.com/germsvel/ex_crap) (MIT). See NOTICE.md for attribution.
 - **Standalone Escript** - Build standalone executable with `mix escript.build`
 - **Hex Archive Support** - Install globally with `mix archive.install`

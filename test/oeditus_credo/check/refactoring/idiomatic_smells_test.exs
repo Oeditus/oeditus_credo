@@ -3,11 +3,11 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
 
   alias OeditusCredo.Check.Refactoring.{
     PreferCasePatternMatching,
-    PreferMultiHeadFunction,
-    PreferPipelineOperator,
-    PreferInplaceMapMatching,
+    PreferInplaceBinaryMatching,
     PreferInplaceListMatching,
-    PreferInplaceBinaryMatching
+    PreferInplaceMapMatching,
+    PreferMultiHeadFunction,
+    PreferPipelineOperator
   }
 
   describe "PreferCasePatternMatching" do
@@ -451,4 +451,3 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
     end
   end
 end
-

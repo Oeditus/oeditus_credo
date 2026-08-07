@@ -34,10 +34,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferPipelineOperator do
     Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
   end
 
-  defp traverse({:__block__, _meta, statements} = ast, issues, issue_meta) when is_list(statements) and length(statements) >= 2 do
+  defp traverse({:__block__, _meta, statements} = ast, issues, issue_meta)
+       when is_list(statements) and length(statements) >= 2 do
     new_issues = find_pipeable_chains(statements, issue_meta)
     {ast, new_issues ++ issues}
   end
+
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
   defp find_pipeable_chains(statements, issue_meta) do
@@ -47,6 +49,7 @@ defmodule OeditusCredo.Check.Refactoring.PreferPipelineOperator do
       Enum.flat_map(indexed, fn
         {{:=, meta, [{lhs_var, _, nil}, rhs_call]}, idx} when is_atom(lhs_var) ->
           [{idx, meta, lhs_var, rhs_call}]
+
         _ ->
           []
       end)
@@ -70,7 +73,7 @@ defmodule OeditusCredo.Check.Refactoring.PreferPipelineOperator do
     |> Enum.filter(fn chain -> length(chain) >= 2 end)
     |> Enum.map(fn chain ->
       {_first_idx, first_meta, _first_var, _first_call} = List.first(chain)
-      vars = Enum.map(chain, fn {_, _, v, _} -> Atom.to_string(v) end) |> Enum.join(" -> ")
+      vars = Enum.map_join(chain, " -> ", fn {_, _, v, _} -> Atom.to_string(v) end)
 
       format_issue(
         issue_meta,
@@ -81,7 +84,14 @@ defmodule OeditusCredo.Check.Refactoring.PreferPipelineOperator do
     end)
   end
 
-  defp uses_var_as_first_arg?({_func, _, [{var_name, _, nil} | _rest]}, target_var) when var_name == target_var, do: true
-  defp uses_var_as_first_arg?({{:., _, [_module, _func]}, _, [{var_name, _, nil} | _rest]}, target_var) when var_name == target_var, do: true
+  defp uses_var_as_first_arg?({_func, _, [{var_name, _, nil} | _rest]}, target_var)
+       when var_name == target_var, do: true
+
+  defp uses_var_as_first_arg?(
+         {{:., _, [_module, _func]}, _, [{var_name, _, nil} | _rest]},
+         target_var
+       )
+       when var_name == target_var, do: true
+
   defp uses_var_as_first_arg?(_, _), do: false
 end

@@ -41,12 +41,15 @@ defmodule OeditusCredo.Check.Refactoring.PreferInplaceListMatching do
 
         {var_name, op, count} ->
           func_name = extract_func_name(head)
-          suggestion = if op in [:>, :>=, :!=] or (op == :== and count > 0), do: "[_ | _]", else: "[]"
+
+          suggestion =
+            if op in [:>, :>=, :!=] or (op == :== and count > 0), do: "[_ | _]", else: "[]"
 
           [
             format_issue(
               issue_meta,
-              message: "Function `#{func_name}` calls O(N) `length(#{var_name}) #{op} #{count}` in guard. Prefer pattern matching `#{suggestion}`.",
+              message:
+                "Function `#{func_name}` calls O(N) `length(#{var_name}) #{op} #{count}` in guard. Prefer pattern matching `#{suggestion}`.",
               trigger: "length",
               line_no: meta[:line]
             )
@@ -66,15 +69,19 @@ defmodule OeditusCredo.Check.Refactoring.PreferInplaceListMatching do
 
   defp find_length_guard({op, _, [count, {:length, _, [{var_name, _, nil}]}]})
        when op in [:<, :<=, :==, :!=] and is_integer(count) and is_atom(var_name) do
-    normalized_op = case op do
-      :< -> :>
-      :<= -> :>=
-      other -> other
-    end
+    normalized_op =
+      case op do
+        :< -> :>
+        :<= -> :>=
+        other -> other
+      end
+
     {var_name, normalized_op, count}
   end
 
-  defp find_length_guard({:and, _, [left, right]}), do: find_length_guard(left) || find_length_guard(right)
+  defp find_length_guard({:and, _, [left, right]}),
+    do: find_length_guard(left) || find_length_guard(right)
+
   defp find_length_guard(_), do: nil
 
   defp extract_func_name({name, _, _}) when is_atom(name), do: Atom.to_string(name)

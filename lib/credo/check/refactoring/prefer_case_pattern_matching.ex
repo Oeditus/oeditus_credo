@@ -47,10 +47,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferCasePatternMatching do
     issues =
       if length(vars_checked) >= 2 and Enum.count(Enum.uniq(vars_checked)) == 1 do
         var_name = List.first(vars_checked)
+
         [
           format_issue(
             issue_meta,
-            message: "`cond` checks equality of variable `#{var_name}` repeatedly. Prefer `case #{var_name} do` pattern matching.",
+            message:
+              "`cond` checks equality of variable `#{var_name}` repeatedly. Prefer `case #{var_name} do` pattern matching.",
             trigger: "cond",
             line_no: meta[:line]
           )
@@ -69,7 +71,8 @@ defmodule OeditusCredo.Check.Refactoring.PreferCasePatternMatching do
         [
           format_issue(
             issue_meta,
-            message: "`if` condition performs structural equality check. Prefer `case` pattern matching.",
+            message:
+              "`if` condition performs structural equality check. Prefer `case` pattern matching.",
             trigger: "if",
             line_no: meta[:line]
           )
@@ -85,17 +88,18 @@ defmodule OeditusCredo.Check.Refactoring.PreferCasePatternMatching do
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
   defp matches_case_candidate?({:==, _, [left, right]}) do
-    is_pattern_literal?(left) or is_pattern_literal?(right) or is_tuple_elem_check?(left) or is_tuple_elem_check?(right)
+    pattern_literal?(left) or pattern_literal?(right) or tuple_elem_check?(left) or
+      tuple_elem_check?(right)
   end
 
   defp matches_case_candidate?({:elem, _, [_, _]}), do: true
   defp matches_case_candidate?(_), do: false
 
-  defp is_pattern_literal?({:{}, _, _}), do: true
-  defp is_pattern_literal?({_, _}), do: true
-  defp is_pattern_literal?(val) when is_atom(val) and val not in [true, false, nil], do: true
-  defp is_pattern_literal?(_), do: false
+  defp pattern_literal?({:{}, _, _}), do: true
+  defp pattern_literal?({_, _}), do: true
+  defp pattern_literal?(val) when is_atom(val) and val not in [true, false, nil], do: true
+  defp pattern_literal?(_), do: false
 
-  defp is_tuple_elem_check?({:elem, _, _}), do: true
-  defp is_tuple_elem_check?(_), do: false
+  defp tuple_elem_check?({:elem, _, _}), do: true
+  defp tuple_elem_check?(_), do: false
 end

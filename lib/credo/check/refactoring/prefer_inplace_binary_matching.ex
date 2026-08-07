@@ -41,10 +41,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching do
 
         var_name ->
           func_name = extract_func_name(head)
+
           [
             format_issue(
               issue_meta,
-              message: "Function `#{func_name}` checks `is_binary(#{var_name})` and non-empty in guard. Prefer inplace binary matching `<<_::utf8, _::binary>>`.",
+              message:
+                "Function `#{func_name}` checks `is_binary(#{var_name})` and non-empty in guard. Prefer inplace binary matching `<<_::utf8, _::binary>>`.",
               trigger: "is_binary",
               line_no: meta[:line]
             )
@@ -58,10 +60,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching do
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
   defp find_binary_nonempty_guard({:and, _, [left, right]}) do
-    case {is_binary_check(left), is_nonempty_check(right)} do
-      {var, var} when is_atom(var) and not is_nil(var) -> var
+    case {binary_check_var(left), nonempty_check_var(right)} do
+      {var, var} when is_atom(var) and not is_nil(var) ->
+        var
+
       _ ->
-        case {is_binary_check(right), is_nonempty_check(left)} do
+        case {binary_check_var(right), nonempty_check_var(left)} do
           {var, var} when is_atom(var) and not is_nil(var) -> var
           _ -> nil
         end
@@ -70,14 +74,19 @@ defmodule OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching do
 
   defp find_binary_nonempty_guard(_), do: nil
 
-  defp is_binary_check({:is_binary, _, [{var, _, nil}]}) when is_atom(var), do: var
-  defp is_binary_check(_), do: nil
+  defp binary_check_var({:is_binary, _, [{var, _, nil}]}) when is_atom(var), do: var
+  defp binary_check_var(_), do: nil
 
-  defp is_nonempty_check({:!=, _, [{var, _, nil}, ""]}) when is_atom(var), do: var
-  defp is_nonempty_check({:!=, _, ["", {var, _, nil}]}) when is_atom(var), do: var
-  defp is_nonempty_check({:>, _, [{:byte_size, _, [{var, _, nil}]}, 0]}) when is_atom(var), do: var
-  defp is_nonempty_check({:!=, _, [{:byte_size, _, [{var, _, nil}]}, 0]}) when is_atom(var), do: var
-  defp is_nonempty_check(_), do: nil
+  defp nonempty_check_var({:!=, _, [{var, _, nil}, ""]}) when is_atom(var), do: var
+  defp nonempty_check_var({:!=, _, ["", {var, _, nil}]}) when is_atom(var), do: var
+
+  defp nonempty_check_var({:>, _, [{:byte_size, _, [{var, _, nil}]}, 0]}) when is_atom(var),
+    do: var
+
+  defp nonempty_check_var({:!=, _, [{:byte_size, _, [{var, _, nil}]}, 0]}) when is_atom(var),
+    do: var
+
+  defp nonempty_check_var(_), do: nil
 
   defp extract_func_name({name, _, _}) when is_atom(name), do: Atom.to_string(name)
   defp extract_func_name(_), do: "function"

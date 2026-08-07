@@ -36,7 +36,8 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
     Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
   end
 
-  defp traverse({def_op, meta, [head, [do: body]]} = ast, issues, issue_meta) when def_op in [:def, :defp] do
+  defp traverse({def_op, meta, [head, [do: body]]} = ast, issues, issue_meta)
+       when def_op in [:def, :defp] do
     arg_names = extract_arg_names(head)
 
     issues =
@@ -44,10 +45,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
         {:if, if_meta, cond_expr} ->
           if condition_references_arg?(cond_expr, arg_names) do
             func_name = extract_func_name(head)
+
             [
               format_issue(
                 issue_meta,
-                message: "Function `#{func_name}` branches on parameter `#{inspect(arg_names)}` via `if`. Define multi-head function clauses instead.",
+                message:
+                  "Function `#{func_name}` branches on parameter `#{inspect(arg_names)}` via `if`. Define multi-head function clauses instead.",
                 trigger: "if",
                 line_no: if_meta[:line] || meta[:line]
               )
@@ -60,10 +63,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
         {:cond, cond_meta, clauses} ->
           if cond_clauses_reference_args?(clauses, arg_names) do
             func_name = extract_func_name(head)
+
             [
               format_issue(
                 issue_meta,
-                message: "Function `#{func_name}` dispatches logic on parameter `#{inspect(arg_names)}` via `cond`. Define multi-head function clauses instead.",
+                message:
+                  "Function `#{func_name}` dispatches logic on parameter `#{inspect(arg_names)}` via `cond`. Define multi-head function clauses instead.",
                 trigger: "cond",
                 line_no: cond_meta[:line] || meta[:line]
               )
@@ -88,6 +93,7 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
   defp root_conditional(_), do: nil
 
   defp extract_arg_names({:when, _, [head, _guard]}), do: extract_arg_names(head)
+
   defp extract_arg_names({_name, _, args}) when is_list(args) do
     Enum.flat_map(args, fn
       {var, _, nil} when is_atom(var) -> [var]
@@ -95,6 +101,7 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
       _ -> []
     end)
   end
+
   defp extract_arg_names(_), do: []
 
   defp extract_func_name({:when, _, [head, _guard]}), do: extract_func_name(head)
@@ -106,6 +113,7 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
       Macro.prewalk(cond_expr, false, fn
         {var, _, nil} = node, _acc when is_atom(var) ->
           if var in arg_names, do: {node, true}, else: {node, false}
+
         node, acc ->
           {node, acc}
       end)
@@ -119,5 +127,6 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
       _ -> false
     end)
   end
+
   defp cond_clauses_reference_args?(_, _), do: false
 end

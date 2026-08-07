@@ -41,10 +41,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferInplaceMapMatching do
 
         var_name ->
           func_name = extract_func_name(head)
+
           [
             format_issue(
               issue_meta,
-              message: "Function `#{func_name}` uses `is_map(#{var_name})` in guard. Prefer inplace pattern matching `%{} = #{var_name}` in parameters.",
+              message:
+                "Function `#{func_name}` uses `is_map(#{var_name})` in guard. Prefer inplace pattern matching `%{} = #{var_name}` in parameters.",
               trigger: "is_map",
               line_no: meta[:line]
             )
@@ -58,7 +60,10 @@ defmodule OeditusCredo.Check.Refactoring.PreferInplaceMapMatching do
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
   defp find_is_map_guard({:is_map, _, [{var_name, _, nil}]}) when is_atom(var_name), do: var_name
-  defp find_is_map_guard({:and, _, [left, right]}), do: find_is_map_guard(left) || find_is_map_guard(right)
+
+  defp find_is_map_guard({:and, _, [left, right]}),
+    do: find_is_map_guard(left) || find_is_map_guard(right)
+
   defp find_is_map_guard(_), do: nil
 
   defp extract_func_name({name, _, _}) when is_atom(name), do: Atom.to_string(name)

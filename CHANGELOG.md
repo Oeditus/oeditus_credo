@@ -5,14 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-- All 20 idiomatic refactoring checks now accept the common `exclude_test_files` parameter (default `false`), matching the rest of the suite.
-
-### Fixed
-- `ChangeRiskAntiPatterns` no longer crashes when configured as `{Check, false}`.
-
 ### Documentation
 - README, QUICKSTART.md, STANDALONE.md, STANDALONE_SUMMARY.md, the `OeditusCredo` moduledoc, the generated `.credo.exs` (`OeditusCredo.CLI.default_config/0`) and the ExDoc module groups now cover all 58 checks.
 - Documented that `ChangeRiskAntiPatterns` and `UnsafeMapAccess` are the only two opt-in checks, so `mix oeditus_credo` enables 56 of 58 checks.

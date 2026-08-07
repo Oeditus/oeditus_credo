@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `mix oeditus_assistant_skill` - Generates AI assistant skills (`SKILL.md`) for `claude`, `openai`, or `gemini` to run OeditusCredo checks in a lightweight local mode for shaping PRs.
+- `mix oeditus_assistant_gha` - Generates GitHub Action workflow (`.github/workflows/oeditus.yml`) and composite action runner (`.github/actions/oeditus/`) to run automated AI PR reviews on Elixir diffs.
 
 ## [0.10.2] - 2026-08-07
 

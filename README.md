@@ -246,6 +246,52 @@ The same set of checks (with the two opt-in ones disabled) is what
 `mix oeditus_credo` enables automatically, so a standalone installation needs no
 `.credo.exs` at all.
 
+## AI Assistant & Automation Tasks
+
+OeditusCredo includes built-in Mix tasks to generate AI coding rules, assistant skills, and GitHub Actions workflows for local PR shaping and automated CI reviews.
+
+### `mix oeditus_assistant_rules`
+
+Generates coding rules in Markdown format (`.aiassistant/rules/oeditus.md`) derived from all OeditusCredo checks. Remote and local AI assistants (Cursor, Copilot, Cody, etc.) use this file to avoid producing code that triggers Credo warnings.
+
+```bash
+mix oeditus_assistant_rules            # Writes to .aiassistant/rules/oeditus.md
+mix oeditus_assistant_rules --stdout   # Prints rules to stdout
+mix oeditus_assistant_rules -o PATH    # Writes to a custom file path
+```
+
+### `mix oeditus_assistant_skill`
+
+Generates an AI assistant skill file (`SKILL.md`) for running OeditusCredo checks in a lightweight local mode. It empowers AI assistants to evaluate local files or PR diffs and propose idiomatic refactorings directly without needing full CI runs.
+
+Supported target assistants: `claude`, `openai`, `gemini`.
+
+```bash
+# Generate skill for specific assistant target
+mix oeditus_assistant_skill claude    # Writes to .claude/skills/oeditus/SKILL.md
+mix oeditus_assistant_skill openai    # Writes to .openai/skills/oeditus/SKILL.md
+mix oeditus_assistant_skill gemini    # Writes to .gemini/skills/oeditus/SKILL.md
+
+# Options
+mix oeditus_assistant_skill claude --stdout   # Prints skill to stdout
+mix oeditus_assistant_skill claude -o PATH    # Writes to custom file path
+```
+
+### `mix oeditus_assistant_gha`
+
+Generates a GitHub Action workflow (`.github/workflows/oeditus.yml`) and composite action runner (`.github/actions/oeditus/`) that automatically review Elixir PR diffs using Claude or OpenAI models and post inline GitHub PR comments with code suggestions.
+
+Generated files:
+- `.github/actions/oeditus/action.yml` (Composite action metadata)
+- `.github/actions/oeditus/review_pr.py` (Standalone Python 3 PR reviewer)
+- `.github/workflows/oeditus.yml` (GitHub Actions workflow trigger)
+
+```bash
+mix oeditus_assistant_gha            # Writes action and workflow files
+mix oeditus_assistant_gha --stdout   # Prints generated workflow files to stdout
+mix oeditus_assistant_gha -o DIR     # Writes files to a custom base directory
+```
+
 ## Change Risk Anti-Patterns (CRAP) score
 
 `ChangeRiskAntiPatterns` is **opt-in and disabled by default** because it needs
@@ -293,14 +339,14 @@ All checks support configuration parameters. Pass them in `.credo.exs`:
 
 Every check accepts the following general parameters provided by Credo:
 
-- **`false`** -- Disable a check entirely. When a check tuple uses `false` instead of a keyword list, the check is skipped and produces no issues.
+- **`false`** — Disable a check entirely. When a check tuple uses `false` instead of a keyword list, the check is skipped and produces no issues.
 
   ```elixir
   # Disable a check
   {OeditusCredo.Check.Warning.NPlusOneQuery, false}
   ```
 
-- **`exit_status`** (`integer()`) -- Override the exit status contributed by issues from this check. By default, all checks in the `:warning` category contribute exit status `16`. Setting `exit_status: 0` means the check still runs and reports issues, but they will not cause a non-zero exit code.
+- **`exit_status`** (`integer()`) — Override the exit status contributed by issues from this check. By default, all checks in the `:warning` category contribute exit status `16`. Setting `exit_status: 0` means the check still runs and reports issues, but they will not cause a non-zero exit code.
 
   ```elixir
   # Run the check but don't fail CI on its issues
@@ -310,9 +356,9 @@ Every check accepts the following general parameters provided by Credo:
   {OeditusCredo.Check.Security.SQLInjection, exit_status: 2}
   ```
 
-- **`priority`** -- Override the base priority for the check (`:low`, `:normal`, `:high`, `:higher`, or `:ignore`).
+- **`priority`** — Override the base priority for the check (`:low`, `:normal`, `:high`, `:higher`, or `:ignore`).
 
-- **`files`** -- Restrict which files the check runs on:
+- **`files`** — Restrict which files the check runs on:
 
   ```elixir
   {OeditusCredo.Check.Security.SQLInjection, files: %{included: ["lib/my_app/repo.ex"]}}
@@ -324,13 +370,13 @@ These parameters can be combined with any check-specific parameters.
 
 Every OeditusCredo check additionally accepts:
 
-- `exclude_test_files` (`boolean()`) -- When set to `true`, files ending in `_test.exs` or located under a `/test/` directory are skipped. The default is `false` for every check except `ChangeRiskAntiPatterns`, where it defaults to `true`.
+- `exclude_test_files` (`boolean()`) — When set to `true`, files ending in `_test.exs` or located under a `/test/` directory are skipped. The default is `false` for every check except `ChangeRiskAntiPatterns`, where it defaults to `true`.
 
 ### Code Quality
 
-- **CallbackHell**: `max_nesting` -- Maximum allowed case nesting depth (default: `2`)
-- **DirectStructUpdate**: `extra_struct_patterns` -- Additional regex strings for struct-like variable names (default: `[]`)
-- **BlockingInPlug**: `extra_blocking_modules` -- Additional module atoms to treat as blocking (default: `[]`)
+- **CallbackHell**: `max_nesting` — Maximum allowed case nesting depth (default: `2`)
+- **DirectStructUpdate**: `extra_struct_patterns` — Additional regex strings for struct-like variable names (default: `[]`)
+- **BlockingInPlug**: `extra_blocking_modules` — Additional module atoms to treat as blocking (default: `[]`)
 
 ### Code Organization & Idiomatic Refactoring
 
@@ -353,38 +399,38 @@ are the usual ways to soften them:
 
 ### Refactoring Suggestions
 
-- **SuggestFSM**: `status_field_names` -- Field names to watch (default: `[:status, :state]`); `min_states` -- Minimum distinct status values before flagging (default: `3`)
-- **ChangeRiskAntiPatterns**: `max_score` -- Maximum CRAP score before a function is reported (default: `30`); `coverdata` -- Path to the persisted coverage file (default: `"cover/default.coverdata"`); `exclude_test_files` -- Skip test files (default: `true`); `require_coverage` -- Report an issue when coverage data is missing instead of skipping (default: `false`). See [Change Risk Anti-Patterns (CRAP) score](#change-risk-anti-patterns-crap-score) for the required workflow.
+- **SuggestFSM**: `status_field_names` — Field names to watch (default: `[:status, :state]`); `min_states` — Minimum distinct status values before flagging (default: `3`)
+- **ChangeRiskAntiPatterns**: `max_score` — Maximum CRAP score before a function is reported (default: `30`); `coverdata` — Path to the persisted coverage file (default: `"cover/default.coverdata"`); `exclude_test_files` — Skip test files (default: `true`); `require_coverage` — Report an issue when coverage data is missing instead of skipping (default: `false`). See [Change Risk Anti-Patterns (CRAP) score](#change-risk-anti-patterns-crap-score) for the required workflow.
 
 ### LiveView & Concurrency
 
-- **SyncOverAsync**: `extra_blocking_modules` -- Additional blocking module atoms (default: `[]`); `callback_functions` -- Callback names to check (default: `[:handle_event, :handle_call, :handle_info, :handle_cast, :handle_continue]`)
-- **MissingHandleAsync**: `extra_blocking_modules` -- Additional blocking module atoms (default: `[]`)
+- **SyncOverAsync**: `extra_blocking_modules` — Additional blocking module atoms (default: `[]`); `callback_functions` — Callback names to check (default: `[:handle_event, :handle_call, :handle_info, :handle_cast, :handle_continue]`)
+- **MissingHandleAsync**: `extra_blocking_modules` — Additional blocking module atoms (default: `[]`)
 
 ### Telemetry & Observability
 
-- **MissingTelemetryForExternalHttp**: `extra_http_modules` -- Additional `{module_parts, [functions]}` tuples (default: `[]`)
-- **MissingTelemetryInAuthPlug**: `extra_auth_plug_names` -- Additional auth plug name substrings (default: `[]`)
+- **MissingTelemetryForExternalHttp**: `extra_http_modules` — Additional `{module_parts, [functions]}` tuples (default: `[]`)
+- **MissingTelemetryInAuthPlug**: `extra_auth_plug_names` — Additional auth plug name substrings (default: `[]`)
 
-### Security -- Injection
+### Security — Injection
 
-- **CodeInjection**: `extra_dangerous_functions` -- Additional `Code.*` function atoms to flag (default: `[]`)
+- **CodeInjection**: `extra_dangerous_functions` — Additional `Code.*` function atoms to flag (default: `[]`)
 
-### Security -- Auth
+### Security — Auth
 
-- **MissingAuthentication**: `sensitive_actions` -- Controller actions requiring auth (default: `[:index, :show, :create, :new, :update, :edit, :delete, :destroy]`)
-- **MissingAuthorization**: `extra_auth_indicators` -- Additional authorization indicator substrings (default: `[]`)
-- **IncorrectAuthorization**: `extra_auth_indicators` -- Additional authorization indicator substrings (default: `[]`)
-- **InsecureDirectObjectReference**: `extra_ownership_indicators` -- Additional ownership/auth indicator substrings (default: `[]`)
+- **MissingAuthentication**: `sensitive_actions` — Controller actions requiring auth (default: `[:index, :show, :create, :new, :update, :edit, :delete, :destroy]`)
+- **MissingAuthorization**: `extra_auth_indicators` — Additional authorization indicator substrings (default: `[]`)
+- **IncorrectAuthorization**: `extra_auth_indicators` — Additional authorization indicator substrings (default: `[]`)
+- **InsecureDirectObjectReference**: `extra_ownership_indicators` — Additional ownership/auth indicator substrings (default: `[]`)
 
-### Security -- Data Protection
+### Security — Data Protection
 
-- **SensitiveDataExposure**: `extra_sensitive_terms` -- Additional sensitive field substrings (default: `[]`)
-- **HardcodedCredentials**: `extra_credential_terms` -- Additional credential name substrings (default: `[]`)
+- **SensitiveDataExposure**: `extra_sensitive_terms` — Additional sensitive field substrings (default: `[]`)
+- **HardcodedCredentials**: `extra_credential_terms` — Additional credential name substrings (default: `[]`)
 
-### Security -- Web
+### Security — Web
 
-- **SSRFVulnerability**: `extra_http_modules` -- Additional HTTP module atom lists, e.g. `[[:MyHTTP]]` (default: `[]`)
+- **SSRFVulnerability**: `extra_http_modules` — Additional HTTP module atom lists, e.g. `[[:MyHTTP]]` (default: `[]`)
 
 ### Example
 

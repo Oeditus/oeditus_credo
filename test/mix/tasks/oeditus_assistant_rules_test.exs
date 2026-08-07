@@ -4,16 +4,6 @@ defmodule Mix.Tasks.OeditusAssistantRulesTest do
   alias Mix.Tasks.OeditusAssistantRules
 
   describe "generate/0" do
-    test "generates rules content matching the .aiassistant/rules/oeditus.md file" do
-      generated = OeditusAssistantRules.generate()
-      file_path = ".aiassistant/rules/oeditus.md"
-
-      assert File.exists?(file_path), "Expected #{file_path} to exist"
-
-      assert File.read!(file_path) == generated,
-             "Expected #{file_path} to be up-to-date with `mix oeditus_assistant_rules`"
-    end
-
     test "includes footer with current version of OeditusCredo" do
       generated = OeditusAssistantRules.generate()
       version = OeditusCredo.version()

@@ -31,7 +31,7 @@ oeditus_credo-*.tar
 /.erl.history/
 /.zed/
 
-/.aiassistant/rules/oeditus.md
+/.aiassistant/
 /.claude/
 /.gemini/
 /.openai/

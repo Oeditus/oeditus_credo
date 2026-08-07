@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README, QUICKSTART.md, STANDALONE.md, STANDALONE_SUMMARY.md, the `OeditusCredo` moduledoc, the generated `.credo.exs` (`OeditusCredo.CLI.default_config/0`) and the ExDoc module groups now cover all 58 checks.
 - Documented that `ChangeRiskAntiPatterns` and `UnsafeMapAccess` are the only two opt-in checks, so `mix oeditus_credo` enables 56 of 58 checks.
 
+## [0.10.3] - 2026-08-07
+
+### Added
+- `mix oeditus_assistant_skill` - Generates AI assistant skills (`SKILL.md`) for `claude`, `openai`, or `gemini` to run OeditusCredo checks in a lightweight local mode for shaping PRs.
+
 ## [0.10.2] - 2026-08-07
 
 ### Added

@@ -32,5 +32,10 @@ oeditus_credo-*.tar
 /.zed/
 
 /.aiassistant/rules/oeditus.md
+/.claude/
+/.gemini/
+/.openai/
 
 /priv/plts/
+
+

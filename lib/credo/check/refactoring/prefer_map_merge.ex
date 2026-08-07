@@ -30,11 +30,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferMapMerge do
   # map |> Map.put(:a, 1) |> Map.put(:b, 2)
   defp traverse({:|>, meta, [{:|>, _, [_lhs, put1]}, put2]} = ast, issues, issue_meta) do
     issues =
-      if is_map_put_call?(put1) and is_map_put_call?(put2) do
+      if map_put_call?(put1) and map_put_call?(put2) do
         [
           format_issue(
             issue_meta,
-            message: "Sequential `Map.put` calls piped together. Prefer `Map.merge(map, %{...})`.",
+            message:
+              "Sequential `Map.put` calls piped together. Prefer `Map.merge(map, %{...})`.",
             trigger: "Map.put",
             line_no: meta[:line]
           )
@@ -49,6 +50,6 @@ defmodule OeditusCredo.Check.Refactoring.PreferMapMerge do
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
-  defp is_map_put_call?({{:., _, [{:__aliases__, _, [:Map]}, :put]}, _, _}), do: true
-  defp is_map_put_call?(_), do: false
+  defp map_put_call?({{:., _, [{:__aliases__, _, [:Map]}, :put]}, _, _}), do: true
+  defp map_put_call?(_), do: false
 end

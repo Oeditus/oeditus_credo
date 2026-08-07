@@ -28,18 +28,21 @@ defmodule OeditusCredo.Check.Refactoring.AvoidUnawaitedTaskAsync do
   end
 
   # Statement in block: Task.async(...)
-  defp traverse({:__block__, _meta, statements} = ast, issues, issue_meta) when is_list(statements) do
+  defp traverse({:__block__, _meta, statements} = ast, issues, issue_meta)
+       when is_list(statements) do
     new_issues =
       Enum.flat_map(statements, fn
         {{:., meta, [{:__aliases__, _, [:Task]}, :async]}, _, _} ->
           [
             format_issue(
               issue_meta,
-              message: "Un-awaited `Task.async` used for background task. Use `Task.Supervisor.start_child/2` or `Task.start/1` for fire-and-forget tasks.",
+              message:
+                "Un-awaited `Task.async` used for background task. Use `Task.Supervisor.start_child/2` or `Task.start/1` for fire-and-forget tasks.",
               trigger: "Task.async",
               line_no: meta[:line]
             )
           ]
+
         _ ->
           []
       end)

@@ -28,14 +28,22 @@ defmodule OeditusCredo.Check.Refactoring.PreferShortFieldAccessCapture do
   end
 
   # fn x -> x.field end
-  defp traverse({:fn, meta, [{:->, _, [[{var, _, nil}], {{:., _, [{var, _, nil}, field]}, _, []}]}]} = ast, issues, issue_meta) when is_atom(var) and is_atom(field) do
+  defp traverse(
+         {:fn, meta, [{:->, _, [[{var, _, nil}], {{:., _, [{var, _, nil}, field]}, _, []}]}]} =
+           ast,
+         issues,
+         issue_meta
+       )
+       when is_atom(var) and is_atom(field) do
     issue =
       format_issue(
         issue_meta,
-        message: "Verbose field extraction `fn x -> x.#{field} end`. Prefer short capture syntax `& &1.#{field}`.",
+        message:
+          "Verbose field extraction `fn x -> x.#{field} end`. Prefer short capture syntax `& &1.#{field}`.",
         trigger: "fn",
         line_no: meta[:line]
       )
+
     {ast, [issue | issues]}
   end
 

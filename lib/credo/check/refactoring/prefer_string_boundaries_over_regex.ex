@@ -27,15 +27,21 @@ defmodule OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex do
     Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
   end
 
-  defp traverse({{:., meta, [{:__aliases__, _, [:Regex]}, :match?]}, _, [regex, _str]} = ast, issues, issue_meta) do
-    if is_simple_regex_boundary?(regex) do
+  defp traverse(
+         {{:., meta, [{:__aliases__, _, [:Regex]}, :match?]}, _, [regex, _str]} = ast,
+         issues,
+         issue_meta
+       ) do
+    if simple_regex_boundary?(regex) do
       issue =
         format_issue(
           issue_meta,
-          message: "`Regex.match?` used for prefix/suffix check. Prefer `String.starts_with?/2` or `String.ends_with?/2`.",
+          message:
+            "`Regex.match?` used for prefix/suffix check. Prefer `String.starts_with?/2` or `String.ends_with?/2`.",
           trigger: "Regex.match?",
           line_no: meta[:line]
         )
+
       {ast, [issue | issues]}
     else
       {ast, issues}
@@ -44,8 +50,10 @@ defmodule OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex do
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
-  defp is_simple_regex_boundary?({:sigil_r, _, [{:<<>>, _, [pattern]}, _opts]}) when is_binary(pattern) do
+  defp simple_regex_boundary?({:sigil_r, _, [{:<<>>, _, [pattern]}, _opts]})
+       when is_binary(pattern) do
     String.starts_with?(pattern, "^") or String.ends_with?(pattern, "$")
   end
-  defp is_simple_regex_boundary?(_), do: false
+
+  defp simple_regex_boundary?(_), do: false
 end

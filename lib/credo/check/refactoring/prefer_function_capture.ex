@@ -28,14 +28,22 @@ defmodule OeditusCredo.Check.Refactoring.PreferFunctionCapture do
   end
 
   # fn x -> Module.func(x) end
-  defp traverse({:fn, meta, [{:->, _, [[{var, _, nil}], {{:., _, [_mod, _func]}, _, [{var, _, nil}]}]}]} = ast, issues, issue_meta) when is_atom(var) do
+  defp traverse(
+         {:fn, meta, [{:->, _, [[{var, _, nil}], {{:., _, [_mod, _func]}, _, [{var, _, nil}]}]}]} =
+           ast,
+         issues,
+         issue_meta
+       )
+       when is_atom(var) do
     issue =
       format_issue(
         issue_meta,
-        message: "Verbose anonymous function `fn x -> Module.func(x) end`. Prefer function capture syntax `&Module.func/1`.",
+        message:
+          "Verbose anonymous function `fn x -> Module.func(x) end`. Prefer function capture syntax `&Module.func/1`.",
         trigger: "fn",
         line_no: meta[:line]
       )
+
     {ast, [issue | issues]}
   end
 

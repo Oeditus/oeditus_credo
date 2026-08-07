@@ -9,6 +9,7 @@ defmodule Mix.Tasks.OeditusAssistantRulesTest do
       file_path = ".aiassistant/rules/oeditus.md"
 
       assert File.exists?(file_path), "Expected #{file_path} to exist"
+
       assert File.read!(file_path) == generated,
              "Expected #{file_path} to be up-to-date with `mix oeditus_assistant_rules`"
     end
@@ -23,7 +24,8 @@ defmodule Mix.Tasks.OeditusAssistantRulesTest do
 
   describe "run/1" do
     test "creates custom output file when -o or --output option is provided" do
-      tmp_path = Path.join(System.tmp_dir!(), "test_rules_#{System.unique_integer([:positive])}.md")
+      tmp_path =
+        Path.join(System.tmp_dir!(), "test_rules_#{System.unique_integer([:positive])}.md")
 
       on_exit(fn -> File.rm(tmp_path) end)
 

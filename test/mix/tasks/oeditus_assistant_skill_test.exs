@@ -12,7 +12,8 @@ defmodule Mix.Tasks.OeditusAssistantSkillTest do
         assert content =~ "OeditusCredo v#{OeditusCredo.version()}"
         assert content =~ "### 🚨 Error Handling"
         assert content =~ "### 🛡️ Security Rules"
-        refute content =~ "ChangeRiskAntiPatterns" # skipped as non-pure LLM check
+        # skipped as non-pure LLM check
+        refute content =~ "ChangeRiskAntiPatterns"
       end
 
       assert OeditusAssistantSkill.generate("claude") =~ "Claude Code"

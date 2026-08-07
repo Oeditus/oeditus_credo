@@ -28,17 +28,19 @@ defmodule OeditusCredo.Check.Refactoring.AvoidSinglePipe do
   end
 
   defp traverse({:|>, meta, [lhs, _rhs]} = ast, issues, issue_meta) do
-    if not nested_pipe?(lhs) do
+    if nested_pipe?(lhs) do
+      {ast, issues}
+    else
       issue =
         format_issue(
           issue_meta,
-          message: "Single-stage pipe operator `\|>` detected. Write as direct function call `f(x)` unless chaining 2+ operations.",
+          message:
+            "Single-stage pipe operator `\|>` detected. Write as direct function call `f(x)` unless chaining 2+ operations.",
           trigger: "|>",
           line_no: meta[:line]
         )
+
       {ast, [issue | issues]}
-    else
-      {ast, issues}
     end
   end
 

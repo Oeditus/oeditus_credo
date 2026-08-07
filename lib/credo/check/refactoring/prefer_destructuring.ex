@@ -33,22 +33,30 @@ defmodule OeditusCredo.Check.Refactoring.PreferDestructuring do
     issue =
       format_issue(
         issue_meta,
-        message: "Calling `elem/2` forces imperative tuple extraction. Prefer pattern match destructuring.",
+        message:
+          "Calling `elem/2` forces imperative tuple extraction. Prefer pattern match destructuring.",
         trigger: "elem",
         line_no: meta[:line]
       )
+
     {ast, [issue | issues]}
   end
 
-  defp traverse({{:., meta, [{:__aliases__, _, [:Map]}, :get]}, _, [_map, key]} = ast, issues, issue_meta) do
-    if is_atom_literal?(key) do
+  defp traverse(
+         {{:., meta, [{:__aliases__, _, [:Map]}, :get]}, _, [_map, key]} = ast,
+         issues,
+         issue_meta
+       ) do
+    if atom_literal?(key) do
       issue =
         format_issue(
           issue_meta,
-          message: "Calling `Map.get/2` with atom key #{inspect(key)}. Prefer pattern match destructuring `%{#{key}: val}`.",
+          message:
+            "Calling `Map.get/2` with atom key #{inspect(key)}. Prefer pattern match destructuring `%{#{key}: val}`.",
           trigger: "Map.get",
           line_no: meta[:line]
         )
+
       {ast, [issue | issues]}
     else
       {ast, issues}
@@ -57,6 +65,6 @@ defmodule OeditusCredo.Check.Refactoring.PreferDestructuring do
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
-  defp is_atom_literal?(val) when is_atom(val), do: true
-  defp is_atom_literal?(_), do: false
+  defp atom_literal?(val) when is_atom(val), do: true
+  defp atom_literal?(_), do: false
 end

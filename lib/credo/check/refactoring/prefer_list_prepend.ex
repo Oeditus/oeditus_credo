@@ -32,10 +32,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferListPrepend do
     issue =
       format_issue(
         issue_meta,
-        message: "Appending to list (`list ++ [item]`) is O(N). Prepend `[item | list]` in O(1) and reverse at the end.",
+        message:
+          "Appending to list (`list ++ [item]`) is O(N). Prepend `[item | list]` in O(1) and reverse at the end.",
         trigger: "++",
         line_no: meta[:line]
       )
+
     {ast, [issue | issues]}
   end
 

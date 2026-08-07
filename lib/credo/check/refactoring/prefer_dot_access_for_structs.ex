@@ -29,15 +29,22 @@ defmodule OeditusCredo.Check.Refactoring.PreferDotAccessForStructs do
   end
 
   # Bracket access user[:name]: {{:., meta, [Access, :get]}, meta2, [{var, _, nil}, key]}
-  defp traverse({{:., meta, [Access, :get]}, _meta2, [{var, _, nil}, key]} = ast, issues, issue_meta) when is_atom(var) do
-    if is_atom_literal?(key) and Keyword.get(meta, :from_brackets, false) do
+  defp traverse(
+         {{:., meta, [Access, :get]}, _meta2, [{var, _, nil}, key]} = ast,
+         issues,
+         issue_meta
+       )
+       when is_atom(var) do
+    if atom_literal?(key) and Keyword.get(meta, :from_brackets, false) do
       issue =
         format_issue(
           issue_meta,
-          message: "Bracket access `#{var}[#{inspect(key)}]` detected. Prefer direct dot notation `#{var}.#{key}` or destructuring.",
+          message:
+            "Bracket access `#{var}[#{inspect(key)}]` detected. Prefer direct dot notation `#{var}.#{key}` or destructuring.",
           trigger: "[",
           line_no: meta[:line]
         )
+
       {ast, [issue | issues]}
     else
       {ast, issues}
@@ -46,6 +53,6 @@ defmodule OeditusCredo.Check.Refactoring.PreferDotAccessForStructs do
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
-  defp is_atom_literal?(val) when is_atom(val), do: true
-  defp is_atom_literal?(_), do: false
+  defp atom_literal?(val) when is_atom(val), do: true
+  defp atom_literal?(_), do: false
 end

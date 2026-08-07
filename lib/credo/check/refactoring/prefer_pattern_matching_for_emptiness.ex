@@ -30,14 +30,20 @@ defmodule OeditusCredo.Check.Refactoring.PreferPatternMatchingForEmptiness do
     Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
   end
 
-  defp traverse({_op, meta, [{{:., _, [{:__aliases__, _, [:Enum]}, :count]}, _, [_list]}, _count]} = ast, issues, issue_meta) do
+  defp traverse(
+         {_op, meta, [{{:., _, [{:__aliases__, _, [:Enum]}, :count]}, _, [_list]}, _count]} = ast,
+         issues,
+         issue_meta
+       ) do
     issue =
       format_issue(
         issue_meta,
-        message: "`Enum.count/1` traverses entire list to check emptiness. Prefer pattern matching `[_ | _]` or `[]`.",
+        message:
+          "`Enum.count/1` traverses entire list to check emptiness. Prefer pattern matching `[_ | _]` or `[]`.",
         trigger: "Enum.count",
         line_no: meta[:line]
       )
+
     {ast, [issue | issues]}
   end
 

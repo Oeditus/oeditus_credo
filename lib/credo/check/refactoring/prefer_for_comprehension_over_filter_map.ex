@@ -30,11 +30,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferForComprehensionOverFilterMap do
   # list |> Enum.filter(...) |> Enum.map(...)
   defp traverse({:|>, meta, [{:|>, _, [_lhs, filter_call]}, map_call]} = ast, issues, issue_meta) do
     issues =
-      if is_filter_map_pipeline?(filter_call, map_call) do
+      if filter_map_pipeline?(filter_call, map_call) do
         [
           format_issue(
             issue_meta,
-            message: "Sequential `Enum.filter |> Enum.map` pipeline traverses list twice. Prefer `for` comprehension or `Enum.flat_map`.",
+            message:
+              "Sequential `Enum.filter |> Enum.map` pipeline traverses list twice. Prefer `for` comprehension or `Enum.flat_map`.",
             trigger: "|>",
             line_no: meta[:line]
           )
@@ -49,7 +50,17 @@ defmodule OeditusCredo.Check.Refactoring.PreferForComprehensionOverFilterMap do
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
-  defp is_filter_map_pipeline?({{:., _, [{:__aliases__, _, [:Enum]}, :filter]}, _, _}, {{:., _, [{:__aliases__, _, [:Enum]}, :map]}, _, _}), do: true
-  defp is_filter_map_pipeline?({{:., _, [{:__aliases__, _, [:Enum]}, :map]}, _, _}, {{:., _, [{:__aliases__, _, [:Enum]}, :filter]}, _, _}), do: true
-  defp is_filter_map_pipeline?(_, _), do: false
+  defp filter_map_pipeline?(
+         {{:., _, [{:__aliases__, _, [:Enum]}, :filter]}, _, _},
+         {{:., _, [{:__aliases__, _, [:Enum]}, :map]}, _, _}
+       ),
+       do: true
+
+  defp filter_map_pipeline?(
+         {{:., _, [{:__aliases__, _, [:Enum]}, :map]}, _, _},
+         {{:., _, [{:__aliases__, _, [:Enum]}, :filter]}, _, _}
+       ),
+       do: true
+
+  defp filter_map_pipeline?(_, _), do: false
 end

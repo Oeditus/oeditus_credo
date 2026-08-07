@@ -38,10 +38,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferTaggedTuplesForErrors do
     issue =
       format_issue(
         issue_meta,
-        message: "Found `try...rescue` block used for control flow. Prefer safe functions returning `{:ok, val}` or `{:error, reason}`.",
+        message:
+          "Found `try...rescue` block used for control flow. Prefer safe functions returning `{:ok, val}` or `{:error, reason}`.",
         trigger: "try",
         line_no: meta[:line]
       )
+
     {ast, [issue | issues]}
   end
 

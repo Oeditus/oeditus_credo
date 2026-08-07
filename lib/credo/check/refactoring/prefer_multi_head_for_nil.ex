@@ -38,10 +38,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadForNil do
 
         var_name ->
           func_name = extract_func_name(head)
+
           [
             format_issue(
               issue_meta,
-              message: "Function `#{func_name}` uses `is_nil(#{var_name})` in guard. Prefer pattern matching `nil` directly in multi-head clauses.",
+              message:
+                "Function `#{func_name}` uses `is_nil(#{var_name})` in guard. Prefer pattern matching `nil` directly in multi-head clauses.",
               trigger: "is_nil",
               line_no: meta[:line]
             )

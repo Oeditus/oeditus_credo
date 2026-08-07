@@ -2,21 +2,21 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
   use Credo.Test.Case
 
   alias OeditusCredo.Check.Refactoring.{
-    PreferCasePatternMatching,
-    PreferMultiHeadFunction,
-    PreferPipelineOperator,
-    PreferInplaceMapMatching,
-    PreferInplaceListMatching,
-    PreferInplaceBinaryMatching,
-    PreferDestructuring,
-    PreferMultiHeadForNil,
-    PreferWithClause,
-    PreferTaggedTuplesForErrors,
-    PreferForComprehensionOverFilterMap,
-    PreferListPrepend,
-    PreferPatternMatchingForEmptiness,
     AvoidSinglePipe,
-    PreferDotAccessForStructs
+    PreferCasePatternMatching,
+    PreferDestructuring,
+    PreferDotAccessForStructs,
+    PreferForComprehensionOverFilterMap,
+    PreferInplaceBinaryMatching,
+    PreferInplaceListMatching,
+    PreferInplaceMapMatching,
+    PreferListPrepend,
+    PreferMultiHeadForNil,
+    PreferMultiHeadFunction,
+    PreferPatternMatchingForEmptiness,
+    PreferPipelineOperator,
+    PreferTaggedTuplesForErrors,
+    PreferWithClause
   }
 
   describe "PreferCasePatternMatching" do

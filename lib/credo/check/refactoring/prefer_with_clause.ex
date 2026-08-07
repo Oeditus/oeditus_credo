@@ -37,13 +37,15 @@ defmodule OeditusCredo.Check.Refactoring.PreferWithClause do
     Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
   end
 
-  defp traverse({:case, meta, [_expr, [do: clauses]]} = ast, issues, issue_meta) when is_list(clauses) do
+  defp traverse({:case, meta, [_expr, [do: clauses]]} = ast, issues, issue_meta)
+       when is_list(clauses) do
     issues =
       if has_nested_case_clause?(clauses) do
         [
           format_issue(
             issue_meta,
-            message: "Found nested `case` statement. Refactor sequential fallible operations into a `with` statement.",
+            message:
+              "Found nested `case` statement. Refactor sequential fallible operations into a `with` statement.",
             trigger: "case",
             line_no: meta[:line]
           )
@@ -66,6 +68,9 @@ defmodule OeditusCredo.Check.Refactoring.PreferWithClause do
   end
 
   defp contains_case?({:case, _, _}), do: true
-  defp contains_case?({:__block__, _, block}) when is_list(block), do: Enum.any?(block, &contains_case?/1)
+
+  defp contains_case?({:__block__, _, block}) when is_list(block),
+    do: Enum.any?(block, &contains_case?/1)
+
   defp contains_case?(_), do: false
 end

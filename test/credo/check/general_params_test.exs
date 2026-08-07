@@ -51,12 +51,27 @@ defmodule OeditusCredo.Check.GeneralParamsTest do
   ]
 
   @refactoring_checks [
+    OeditusCredo.Check.Refactoring.AvoidSinglePipe,
+    OeditusCredo.Check.Refactoring.AvoidUnawaitedTaskAsync,
+    OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns,
     OeditusCredo.Check.Refactoring.PreferCasePatternMatching,
+    OeditusCredo.Check.Refactoring.PreferDestructuring,
+    OeditusCredo.Check.Refactoring.PreferDotAccessForStructs,
+    OeditusCredo.Check.Refactoring.PreferForComprehensionOverFilterMap,
+    OeditusCredo.Check.Refactoring.PreferFunctionCapture,
     OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching,
     OeditusCredo.Check.Refactoring.PreferInplaceListMatching,
     OeditusCredo.Check.Refactoring.PreferInplaceMapMatching,
+    OeditusCredo.Check.Refactoring.PreferListPrepend,
+    OeditusCredo.Check.Refactoring.PreferMapMerge,
+    OeditusCredo.Check.Refactoring.PreferMultiHeadForNil,
     OeditusCredo.Check.Refactoring.PreferMultiHeadFunction,
+    OeditusCredo.Check.Refactoring.PreferPatternMatchingForEmptiness,
     OeditusCredo.Check.Refactoring.PreferPipelineOperator,
+    OeditusCredo.Check.Refactoring.PreferShortFieldAccessCapture,
+    OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex,
+    OeditusCredo.Check.Refactoring.PreferTaggedTuplesForErrors,
+    OeditusCredo.Check.Refactoring.PreferWithClause,
     OeditusCredo.Check.Refactoring.SuggestFSM
   ]
 

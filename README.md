@@ -6,7 +6,7 @@ Custom Credo checks for detecting common Elixir/Phoenix anti-patterns, mistakes,
 
 ## Overview
 
-OeditusCredo provides 46 comprehensive custom Credo checks that detect common mistakes, risky code, and security vulnerabilities in Elixir and Phoenix projects:
+OeditusCredo provides 58 comprehensive custom Credo checks that detect common mistakes, risky code, and security vulnerabilities in Elixir and Phoenix projects:
 
 ### Error Handling Anti-patterns
 - **MissingErrorHandling** - Detects `{:ok, x} =` pattern without error handling
@@ -37,10 +37,24 @@ OeditusCredo provides 46 comprehensive custom Credo checks that detect common mi
 ### Code Organization & Idiomatic Refactoring
 - **PreferCasePatternMatching** - Detects `if`/`cond` where `case` pattern matching is preferred
 - **PreferMultiHeadFunction** - Detects parameter branching inside function body instead of multi-head clauses
+- **PreferMultiHeadForNil** - Detects `is_nil/1` guards instead of multi-head clauses matching `nil` directly
 - **PreferPipelineOperator** - Detects sequential assignments instead of pipe operator `|>`
 - **PreferInplaceMapMatching** - Detects `is_map/1` guard instead of inplace `%{} = map` pattern matching
 - **PreferInplaceListMatching** - Detects O(N) `length/1` calls in guards instead of `[_ | _]` or `[]`
 - **PreferInplaceBinaryMatching** - Detects `is_binary` non-empty guards instead of `<<_::utf8, _::binary>>`
+- **PreferDestructuring** - Detects `elem/2` and `Map.get/2` with literal keys instead of pattern match destructuring
+- **PreferDotAccessForStructs** - Detects `struct[:field]` bracket access instead of `struct.field`
+- **PreferWithClause** - Detects nested `case` statements (pyramid of doom) instead of `with`
+- **PreferTaggedTuplesForErrors** - Detects `try...rescue` used as control flow instead of `{:ok, _}` / `{:error, _}`
+- **PreferForComprehensionOverFilterMap** - Detects `Enum.filter |> Enum.map` instead of a `for` comprehension
+- **PreferListPrepend** - Detects O(N) `list ++ [item]` appends instead of `[item | list]`
+- **PreferPatternMatchingForEmptiness** - Detects `Enum.count(list) > 0` instead of matching `[_ | _]` or `[]`
+- **PreferStringBoundariesOverRegex** - Detects `Regex.match?` for prefix/suffix checks instead of `String.starts_with?/2` and `String.ends_with?/2`
+- **PreferFunctionCapture** - Detects `fn x -> Module.func(x) end` instead of `&Module.func/1`
+- **PreferShortFieldAccessCapture** - Detects `fn x -> x.field end` instead of `& &1.field`
+- **PreferMapMerge** - Detects chained `Map.put` calls instead of a single `Map.merge/2`
+- **AvoidSinglePipe** - Detects single-stage pipes `x |> f()` instead of a direct call `f(x)`
+- **AvoidUnawaitedTaskAsync** - Detects fire-and-forget `Task.async` whose handle is discarded
 
 ### Refactoring Suggestions
 - **SuggestFSM** - Detects imperative status/state management (suggests `Finitomata` or `:gen_statem`)
@@ -93,7 +107,7 @@ Add `oeditus_credo` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:oeditus_credo, "~> 0.8", only: [:dev, :test], runtime: false}
+    {:oeditus_credo, "~> 0.10", only: [:dev, :test], runtime: false}
   ]
 end
 ```
@@ -162,10 +176,24 @@ Add the checks to your `.credo.exs` configuration:
           # Code Organization & Idiomatic Refactoring
           {OeditusCredo.Check.Refactoring.PreferCasePatternMatching, []},
           {OeditusCredo.Check.Refactoring.PreferMultiHeadFunction, []},
+          {OeditusCredo.Check.Refactoring.PreferMultiHeadForNil, []},
           {OeditusCredo.Check.Refactoring.PreferPipelineOperator, []},
           {OeditusCredo.Check.Refactoring.PreferInplaceMapMatching, []},
           {OeditusCredo.Check.Refactoring.PreferInplaceListMatching, []},
           {OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching, []},
+          {OeditusCredo.Check.Refactoring.PreferDestructuring, []},
+          {OeditusCredo.Check.Refactoring.PreferDotAccessForStructs, []},
+          {OeditusCredo.Check.Refactoring.PreferWithClause, []},
+          {OeditusCredo.Check.Refactoring.PreferTaggedTuplesForErrors, []},
+          {OeditusCredo.Check.Refactoring.PreferForComprehensionOverFilterMap, []},
+          {OeditusCredo.Check.Refactoring.PreferListPrepend, []},
+          {OeditusCredo.Check.Refactoring.PreferPatternMatchingForEmptiness, []},
+          {OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex, []},
+          {OeditusCredo.Check.Refactoring.PreferFunctionCapture, []},
+          {OeditusCredo.Check.Refactoring.PreferShortFieldAccessCapture, []},
+          {OeditusCredo.Check.Refactoring.PreferMapMerge, []},
+          {OeditusCredo.Check.Refactoring.AvoidSinglePipe, []},
+          {OeditusCredo.Check.Refactoring.AvoidUnawaitedTaskAsync, []},
           # Refactoring Suggestions
           {OeditusCredo.Check.Refactoring.SuggestFSM, []},
           # Telemetry & Observability
@@ -195,6 +223,12 @@ Add the checks to your `.credo.exs` configuration:
           {OeditusCredo.Check.Security.SSRFVulnerability, []},
           # Security - Race Conditions
           {OeditusCredo.Check.Security.TOCTOU, []}
+        ],
+        disabled: [
+          # Opt-in: needs persisted coverage data, see the CRAP section below
+          {OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns, []},
+          # Opt-in: needs the optional `typle` dependency and Elixir 1.20+
+          {OeditusCredo.Check.Warning.UnsafeMapAccess, []}
         ]
       }
     ]
@@ -207,6 +241,10 @@ Then run:
 ```bash
 mix credo
 ```
+
+The same set of checks (with the two opt-in ones disabled) is what
+`mix oeditus_credo` enables automatically, so a standalone installation needs no
+`.credo.exs` at all.
 
 ## Change Risk Anti-Patterns (CRAP) score
 
@@ -286,13 +324,32 @@ These parameters can be combined with any check-specific parameters.
 
 Every OeditusCredo check additionally accepts:
 
-- `exclude_test_files` (`boolean()`, default: `false`) -- When set to `true`, files ending in `_test.exs` or located under a `/test/` directory are skipped.
+- `exclude_test_files` (`boolean()`) -- When set to `true`, files ending in `_test.exs` or located under a `/test/` directory are skipped. The default is `false` for every check except `ChangeRiskAntiPatterns`, where it defaults to `true`.
 
 ### Code Quality
 
 - **CallbackHell**: `max_nesting` -- Maximum allowed case nesting depth (default: `2`)
 - **DirectStructUpdate**: `extra_struct_patterns` -- Additional regex strings for struct-like variable names (default: `[]`)
 - **BlockingInPlug**: `extra_blocking_modules` -- Additional module atoms to treat as blocking (default: `[]`)
+
+### Code Organization & Idiomatic Refactoring
+
+The idiomatic refactoring checks (`PreferCasePatternMatching`,
+`PreferMultiHeadFunction`, `PreferMultiHeadForNil`, `PreferPipelineOperator`,
+`PreferInplaceMapMatching`, `PreferInplaceListMatching`,
+`PreferInplaceBinaryMatching`, `PreferDestructuring`,
+`PreferDotAccessForStructs`, `PreferWithClause`, `PreferTaggedTuplesForErrors`,
+`PreferForComprehensionOverFilterMap`, `PreferListPrepend`,
+`PreferPatternMatchingForEmptiness`, `PreferStringBoundariesOverRegex`,
+`PreferFunctionCapture`, `PreferShortFieldAccessCapture`, `PreferMapMerge`,
+`AvoidSinglePipe`, `AvoidUnawaitedTaskAsync`) take no check-specific parameters
+beyond the general Credo ones and `exclude_test_files`. Since they are the most
+opinionated checks in the suite, `exclude_test_files: true` and `exit_status: 0`
+are the usual ways to soften them:
+
+```elixir
+{OeditusCredo.Check.Refactoring.AvoidSinglePipe, [exclude_test_files: true, exit_status: 0]}
+```
 
 ### Refactoring Suggestions
 
@@ -350,7 +407,7 @@ Every OeditusCredo check additionally accepts:
 
 ## Test Coverage
 
-The library includes comprehensive tests for all 46 checks. Run tests with:
+The library includes comprehensive tests for all 58 checks. Run tests with:
 
 ```bash
 mix test

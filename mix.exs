@@ -91,9 +91,9 @@ defmodule OeditusCredo.MixProject do
   defp description do
     """
     Custom Credo checks for common Elixir/Phoenix anti-patterns and
-    CWE Top 25 security vulnerabilities. Provides 40 comprehensive
-    checks covering code quality, error handling, performance, change risk,
-    telemetry, and security
+    CWE Top 25 security vulnerabilities. Provides 58 comprehensive
+    checks covering code quality, error handling, idiomatic refactoring,
+    performance, change risk, telemetry, and security
     (SQL injection, XSS, path traversal, CSRF, SSRF, hardcoded credentials, etc).
     """
   end
@@ -188,6 +188,28 @@ defmodule OeditusCredo.MixProject do
         OeditusCredo.Check.Warning.CallbackHell,
         OeditusCredo.Check.Warning.BlockingInPlug,
         OeditusCredo.Check.Warning.UnsafeMapAccess
+      ],
+      "Code Organization & Idiomatic Refactoring": [
+        OeditusCredo.Check.Refactoring.AvoidSinglePipe,
+        OeditusCredo.Check.Refactoring.AvoidUnawaitedTaskAsync,
+        OeditusCredo.Check.Refactoring.PreferCasePatternMatching,
+        OeditusCredo.Check.Refactoring.PreferDestructuring,
+        OeditusCredo.Check.Refactoring.PreferDotAccessForStructs,
+        OeditusCredo.Check.Refactoring.PreferForComprehensionOverFilterMap,
+        OeditusCredo.Check.Refactoring.PreferFunctionCapture,
+        OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching,
+        OeditusCredo.Check.Refactoring.PreferInplaceListMatching,
+        OeditusCredo.Check.Refactoring.PreferInplaceMapMatching,
+        OeditusCredo.Check.Refactoring.PreferListPrepend,
+        OeditusCredo.Check.Refactoring.PreferMapMerge,
+        OeditusCredo.Check.Refactoring.PreferMultiHeadForNil,
+        OeditusCredo.Check.Refactoring.PreferMultiHeadFunction,
+        OeditusCredo.Check.Refactoring.PreferPatternMatchingForEmptiness,
+        OeditusCredo.Check.Refactoring.PreferPipelineOperator,
+        OeditusCredo.Check.Refactoring.PreferShortFieldAccessCapture,
+        OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex,
+        OeditusCredo.Check.Refactoring.PreferTaggedTuplesForErrors,
+        OeditusCredo.Check.Refactoring.PreferWithClause
       ],
       "Refactoring Suggestions": [
         OeditusCredo.Check.Refactoring.SuggestFSM,

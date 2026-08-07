@@ -79,7 +79,7 @@ mix oeditus_credo --help
 
 ## What's Included
 
-The standalone installation automatically enables 43 OeditusCredo checks (plus opt-in CRAP scoring):
+The standalone installation automatically enables 56 OeditusCredo checks. Two more are opt-in and stay disabled: `ChangeRiskAntiPatterns` (needs persisted coverage data) and `UnsafeMapAccess` (needs the optional `typle` dependency and Elixir 1.20+).
 
 **Error Handling**
 - MissingErrorHandling
@@ -105,17 +105,33 @@ The standalone installation automatically enables 43 OeditusCredo checks (plus o
 - DirectStructUpdate
 - CallbackHell
 - BlockingInPlug
-- UnsafeMapAccess
+- UnsafeMapAccess (opt-in: requires `typle` and Elixir 1.20+)
 
 **Code Organization & Idiomatic Refactoring**
 - PreferCasePatternMatching
 - PreferMultiHeadFunction
+- PreferMultiHeadForNil
 - PreferPipelineOperator
 - PreferInplaceMapMatching
 - PreferInplaceListMatching
 - PreferInplaceBinaryMatching
+- PreferDestructuring
+- PreferDotAccessForStructs
+- PreferWithClause
+- PreferTaggedTuplesForErrors
+- PreferForComprehensionOverFilterMap
+- PreferListPrepend
+- PreferPatternMatchingForEmptiness
+- PreferStringBoundariesOverRegex
+- PreferFunctionCapture
+- PreferShortFieldAccessCapture
+- PreferMapMerge
+- AvoidSinglePipe
+- AvoidUnawaitedTaskAsync
+
+**Refactoring Suggestions**
 - SuggestFSM
-- ChangeRiskAntiPatterns (opt-in)
+- ChangeRiskAntiPatterns (opt-in: requires persisted coverage data)
 
 **Telemetry & Observability**
 - TelemetryInRecursiveFunction

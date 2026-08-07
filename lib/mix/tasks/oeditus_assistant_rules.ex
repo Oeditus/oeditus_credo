@@ -54,6 +54,7 @@ defmodule Mix.Tasks.OeditusAssistantRules do
       telemetry_rules(),
       readability_rules(),
       idiomatic_refactoring_rules(),
+      refactoring_suggestion_rules(),
       security_injection_rules(),
       security_auth_rules(),
       security_data_protection_rules(),
@@ -368,23 +369,28 @@ defmodule Mix.Tasks.OeditusAssistantRules do
     function (any function receiving `conn` as first argument) slow down
     the entire request pipeline. Move heavy logic to the controller action
     or a background job.
+
+    ### Use dot access on maps with known keys
+
+    When the key is statically known to be present, `map.key` documents that
+    expectation and fails loudly; `map[:key]` silently returns `nil` and pushes
+    the error far away from its cause.
+
+    Bad:
+    ```elixir
+    user[:name]
+    ```
+
+    Good:
+    ```elixir
+    user.name
+    ```
     """
   end
 
   defp telemetry_rules do
     """
     ## Telemetry and Observability
-
-    ### Instrument Oban worker `perform/1` with telemetry
-
-    Every Oban worker's `perform/1` should emit `:telemetry` events
-    (via `:telemetry.execute/3` or `:telemetry.span/3`) for monitoring
-    job execution, duration, and success/failure rates.
-
-    ### Instrument LiveView `mount/3` with telemetry
-
-    LiveView `mount/3` callbacks should call `:telemetry.execute/3` or
-    `:telemetry.span/3` so mounts are tracked in your observability stack.
 
     ### Instrument authentication/authorization plugs with telemetry
 
@@ -586,6 +592,238 @@ defmodule Mix.Tasks.OeditusAssistantRules do
       ...
     end
     ```
+
+    ### Prefer multi-head clauses matching `nil` over `is_nil/1` guards
+
+    Checking `is_nil/1` (or `not is_nil/1`) in a guard is unnecessary when `nil`
+    can be matched directly in a dedicated function head.
+
+    Bad:
+    ```elixir
+    def process(val) when not is_nil(val) do
+      ...
+    end
+    ```
+
+    Good:
+    ```elixir
+    def process(nil), do: :error
+    def process(val), do: do_process(val)
+    ```
+
+    ### Prefer destructuring over `elem/2` and `Map.get/2`
+
+    Extracting values imperatively hides the shape of the data. Pattern match it
+    instead, so the expected structure is visible at the binding site.
+
+    Bad:
+    ```elixir
+    status = elem(result, 0)
+    name = Map.get(user, :name)
+    ```
+
+    Good:
+    ```elixir
+    {status, _} = result
+    %{name: name} = user
+    ```
+
+    ### Prefer `with` over nested `case` statements
+
+    Chained fallible operations nested as `case` inside `case` create a pyramid
+    of doom. Use `with` and let the non-matching clauses fall through to `else`.
+
+    Bad:
+    ```elixir
+    case step1() do
+      {:ok, res1} ->
+        case step2(res1) do
+          {:ok, res2} -> {:ok, res2}
+          {:error, err} -> {:error, err}
+        end
+      {:error, err} -> {:error, err}
+    end
+    ```
+
+    Good:
+    ```elixir
+    with {:ok, res1} <- step1(),
+         {:ok, res2} <- step2(res1) do
+      {:ok, res2}
+    end
+    ```
+
+    ### Prefer tagged tuples over `try...rescue` for control flow
+
+    Exceptions are expensive on the BEAM and hide expected outcomes. Use the
+    safe variant of the function and return `{:ok, value}` / `{:error, reason}`.
+
+    Bad:
+    ```elixir
+    try do
+      String.to_integer(str)
+    rescue
+      ArgumentError -> :invalid
+    end
+    ```
+
+    Good:
+    ```elixir
+    case Integer.parse(str) do
+      {num, ""} -> {:ok, num}
+      _ -> {:error, :invalid}
+    end
+    ```
+
+    ### Prefer a `for` comprehension over `Enum.filter |> Enum.map`
+
+    Piping `Enum.filter/2` into `Enum.map/2` traverses the enumerable twice and
+    allocates an intermediate list.
+
+    Bad:
+    ```elixir
+    list |> Enum.filter(&valid?/1) |> Enum.map(&transform/1)
+    ```
+
+    Good:
+    ```elixir
+    for item <- list, valid?(item), do: transform(item)
+    ```
+
+    ### Never append to a list with `list ++ [item]`
+
+    Appending copies the whole left-hand list (O(N)), which becomes quadratic
+    inside a loop. Prepend in O(1) and reverse once at the end.
+
+    Bad:
+    ```elixir
+    acc = acc ++ [new_item]
+    ```
+
+    Good:
+    ```elixir
+    acc = [new_item | acc]
+    # ... then Enum.reverse(acc)
+    ```
+
+    ### Never use `Enum.count/1` to test emptiness
+
+    `Enum.count/1` walks the entire enumerable. Pattern match `[_ | _]` or `[]`
+    instead.
+
+    Bad:
+    ```elixir
+    if Enum.count(list) > 0 do
+      ...
+    end
+    ```
+
+    Good:
+    ```elixir
+    case list do
+      [_ | _] -> ...
+      [] -> ...
+    end
+    ```
+
+    ### Prefer `String.starts_with?/2` and `String.ends_with?/2` over anchored regexes
+
+    A regex for a plain prefix or suffix check costs a regex engine run for no
+    benefit.
+
+    Bad:
+    ```elixir
+    Regex.match?(~r/^https:/, url)
+    ```
+
+    Good:
+    ```elixir
+    String.starts_with?(url, "https:")
+    ```
+
+    ### Prefer capture syntax over trivial anonymous functions
+
+    Wrapping a single call or a single field access in `fn ... end` is noise.
+
+    Bad:
+    ```elixir
+    Enum.map(inputs, fn str -> String.trim(str) end)
+    Enum.map(users, fn u -> u.id end)
+    ```
+
+    Good:
+    ```elixir
+    Enum.map(inputs, &String.trim/1)
+    Enum.map(users, & &1.id)
+    ```
+
+    ### Prefer `Map.merge/2` over chained `Map.put/3` calls
+
+    Setting several literal keys one at a time rebuilds the map repeatedly.
+
+    Bad:
+    ```elixir
+    map |> Map.put(:a, 1) |> Map.put(:b, 2)
+    ```
+
+    Good:
+    ```elixir
+    Map.merge(map, %{a: 1, b: 2})
+    ```
+
+    ### Never use a single-stage pipe
+
+    The pipe operator is for chaining two or more calls. A lone `|>` only adds
+    syntax.
+
+    Bad:
+    ```elixir
+    data |> String.trim()
+    ```
+
+    Good:
+    ```elixir
+    String.trim(data)
+    ```
+
+    ### Never discard the result of `Task.async/1`
+
+    `Task.async/1` links the task to the caller and expects `Task.await/2`;
+    dropping the handle means a failing task can take the caller down. Use a
+    supervised task for fire-and-forget work.
+
+    Bad:
+    ```elixir
+    Task.async(fn -> send_email(user) end)
+    ```
+
+    Good:
+    ```elixir
+    Task.Supervisor.start_child(MyApp.TaskSupervisor, fn -> send_email(user) end)
+    ```
+    """
+  end
+
+  defp refactoring_suggestion_rules do
+    """
+    ## Refactoring Suggestions
+
+    ### Model entity lifecycles as a state machine
+
+    A module that declares a `status`/`state` field, branches on its values and
+    sets them imperatively (`put_change`, struct updates, transition-verb
+    functions) is an implicit finite state machine. Once three or more states are
+    involved, make it explicit with `Finitomata` or `:gen_statem` so the legal
+    transitions live in one place.
+
+    ### Keep complex functions covered by tests
+
+    Functions that are both complex and under-tested have a high CRAP (Change
+    Risk Anti-Patterns) score and are the riskiest to change:
+
+        CRAP = complexity^2 * (1 - coverage/100)^3 + complexity
+
+    Either simplify the function or add meaningful tests before refactoring it.
     """
   end
 
@@ -946,7 +1184,8 @@ defmodule Mix.Tasks.OeditusAssistantRules do
 
     - Modules: `CamelCase`
     - Functions and variables: `snake_case`
-    - Predicate functions: must start with `is_` or end with `?`
+    - Predicate functions: end with `?` and never start with `is_`
+      (`is_` is reserved for guards defined with `defguard`)
     - Exceptions: must end with `Error`
 
     ### Keep lines under 120 characters

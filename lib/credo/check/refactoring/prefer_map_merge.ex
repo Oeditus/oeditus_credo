@@ -17,15 +17,31 @@ defmodule OeditusCredo.Check.Refactoring.PreferMapMerge do
       Good:
 
           Map.merge(map, %{a: 1, b: 2})
-      """
+      """,
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
+
+  import OeditusCredo.Helpers, only: [test_file?: 1]
 
   @doc false
   @impl true
-  def run(%SourceFile{} = source_file, params \\ []) do
-    issue_meta = IssueMeta.for(source_file, params)
-    Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
+  def run(%SourceFile{}, false), do: []
+
+  def run(%SourceFile{} = source_file, params) do
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      issue_meta = IssueMeta.for(source_file, params)
+      Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   # map |> Map.put(:a, 1) |> Map.put(:b, 2)
   defp traverse({:|>, meta, [{:|>, _, [_lhs, put1]}, put2]} = ast, issues, issue_meta) do

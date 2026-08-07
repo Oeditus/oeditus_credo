@@ -35,14 +35,20 @@ mix oeditus_credo --all
 
 ## What It Checks
 
-OeditusCredo automatically runs 44+ specialized custom checks across key categories:
+OeditusCredo ships 58 specialized custom checks and automatically runs 56 of them across key categories:
 
 1. **Error Handling**: Missing error handling, silent errors, swallowed exceptions
 2. **Database & Performance**: N+1 queries, inefficient filters, missing preloads
 3. **LiveView & Concurrency**: Unmanaged tasks, blocking operations, missing throttling, inline JS
-4. **Code Quality & Idiomatic Refactoring**: Struct updates, callback hell, blocking plugs, pattern matching, pipeline operator, multi-head functions, inplace matching
-5. **Telemetry & Observability**: Telemetry in recursive functions, auth plugs, external HTTP
-6. **Security & Vulnerabilities**: CWE Top 25 security checks (SQL injection, XSS, CSRF, IDOR, SSRF, command injection, path traversal, hardcoded credentials, TOCTOU)
+4. **Code Quality**: Struct updates, callback hell, blocking plugs
+5. **Code Organization & Idiomatic Refactoring**: `case` over `if`/`cond`, multi-head clauses, pipelines, inplace pattern matching, destructuring, `with` chains, tagged tuples, `for` comprehensions, list prepending, capture syntax, `Map.merge`, single-stage pipes, un-awaited tasks
+6. **Readability**: Non-interpolating sigils
+7. **Telemetry & Observability**: Telemetry in recursive functions, auth plugs, external HTTP
+8. **Security & Vulnerabilities**: CWE Top 25 security checks (SQL injection, XSS, CSRF, IDOR, SSRF, command injection, path traversal, hardcoded credentials, TOCTOU)
+
+Two checks are opt-in and stay disabled unless you enable them explicitly:
+`ChangeRiskAntiPatterns` (needs persisted coverage data) and `UnsafeMapAccess`
+(needs the optional `typle` dependency and Elixir 1.20+).
 
 ## CI/CD Examples
 

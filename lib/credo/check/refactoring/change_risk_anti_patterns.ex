@@ -87,6 +87,8 @@ defmodule OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns do
 
   @doc false
   @impl true
+  def run(%SourceFile{}, false), do: []
+
   def run(%SourceFile{} = source_file, params) do
     if Params.get(params, :exclude_test_files, __MODULE__) and test_file?(source_file.filename) do
       []

@@ -27,15 +27,31 @@ defmodule OeditusCredo.Check.Refactoring.PreferWithClause do
                {:ok, res2} <- step2(res1) do
             {:ok, res2}
           end
-      """
+      """,
+      params: [
+        exclude_test_files: "Set to true to skip test files (default: false)"
+      ]
     ]
+
+  import OeditusCredo.Helpers, only: [test_file?: 1]
 
   @doc false
   @impl true
-  def run(%SourceFile{} = source_file, params \\ []) do
-    issue_meta = IssueMeta.for(source_file, params)
-    Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
+  def run(%SourceFile{}, false), do: []
+
+  def run(%SourceFile{} = source_file, params) do
+    if Params.get(params, :exclude_test_files, __MODULE__) and
+         test_file?(source_file.filename) do
+      []
+    else
+      issue_meta = IssueMeta.for(source_file, params)
+      Credo.Code.prewalk(source_file, &traverse(&1, &2, issue_meta))
+    end
   end
+
+  @doc false
+  @impl true
+  def param_defaults, do: [exclude_test_files: false]
 
   defp traverse({:case, meta, [_expr, [do: clauses]]} = ast, issues, issue_meta)
        when is_list(clauses) do

@@ -122,12 +122,16 @@ oeditus_credo
 ## Features
 
 ### Automatic Configuration
-Both methods automatically enable all 20 checks:
+Both methods automatically enable 56 of the 58 checks:
 - Error Handling (3 checks)
 - Database & Performance (3 checks)
 - LiveView & Concurrency (5 checks)
-- Code Quality (4 checks)
-- Telemetry & Observability (5 checks)
+- Readability (1 check)
+- Code Quality (3 checks, plus opt-in UnsafeMapAccess)
+- Code Organization & Idiomatic Refactoring (20 checks)
+- Refactoring Suggestions (SuggestFSM, plus opt-in ChangeRiskAntiPatterns)
+- Telemetry & Observability (3 checks)
+- Security, CWE Top 25 (17 checks)
 
 ### Command-Line Compatibility
 All Credo options work:
@@ -245,7 +249,7 @@ All objectives achieved:
 - ✅ Escript mimics `mix credo` behavior with all checks
 - ✅ Hex archive provides `mix oeditus_credo` command
 - ✅ No dependency required in target projects
-- ✅ All 20 checks automatically enabled
+- ✅ All non-opt-in checks automatically enabled
 - ✅ Compatible with all Credo command-line options
 - ✅ Comprehensive documentation
 - ✅ Automated CI/CD releases

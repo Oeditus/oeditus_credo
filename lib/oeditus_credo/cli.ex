@@ -66,10 +66,24 @@ defmodule OeditusCredo.CLI do
               {OeditusCredo.Check.Refactoring.SuggestFSM, []},
               {OeditusCredo.Check.Refactoring.PreferCasePatternMatching, []},
               {OeditusCredo.Check.Refactoring.PreferMultiHeadFunction, []},
+              {OeditusCredo.Check.Refactoring.PreferMultiHeadForNil, []},
               {OeditusCredo.Check.Refactoring.PreferPipelineOperator, []},
               {OeditusCredo.Check.Refactoring.PreferInplaceMapMatching, []},
               {OeditusCredo.Check.Refactoring.PreferInplaceListMatching, []},
               {OeditusCredo.Check.Refactoring.PreferInplaceBinaryMatching, []},
+              {OeditusCredo.Check.Refactoring.PreferDestructuring, []},
+              {OeditusCredo.Check.Refactoring.PreferDotAccessForStructs, []},
+              {OeditusCredo.Check.Refactoring.PreferWithClause, []},
+              {OeditusCredo.Check.Refactoring.PreferTaggedTuplesForErrors, []},
+              {OeditusCredo.Check.Refactoring.PreferForComprehensionOverFilterMap, []},
+              {OeditusCredo.Check.Refactoring.PreferListPrepend, []},
+              {OeditusCredo.Check.Refactoring.PreferPatternMatchingForEmptiness, []},
+              {OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex, []},
+              {OeditusCredo.Check.Refactoring.PreferFunctionCapture, []},
+              {OeditusCredo.Check.Refactoring.PreferShortFieldAccessCapture, []},
+              {OeditusCredo.Check.Refactoring.PreferMapMerge, []},
+              {OeditusCredo.Check.Refactoring.AvoidSinglePipe, []},
+              {OeditusCredo.Check.Refactoring.AvoidUnawaitedTaskAsync, []},
 
               ## Telemetry & Observability
               {OeditusCredo.Check.Warning.TelemetryInRecursiveFunction, []},
@@ -110,7 +124,12 @@ defmodule OeditusCredo.CLI do
               ## Opt-in: requires persisted coverage data. Run
               ## `mix test --cover --export-coverage default` before this check,
               ## then move it to `enabled` above.
-              {OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns, []}
+              {OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns, []},
+
+              ## Type-aware map access check.
+              ## Opt-in: requires the optional `typle` dependency and
+              ## Elixir 1.20 or later.
+              {OeditusCredo.Check.Warning.UnsafeMapAccess, []}
             ]
           }
         }

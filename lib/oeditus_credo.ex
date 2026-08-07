@@ -46,6 +46,12 @@ defmodule OeditusCredo do
   - **`priority`** -- override the base priority for the check.
   - **`files`** -- restrict which files the check runs on.
 
+  Additionally, every OeditusCredo check accepts `exclude_test_files` to skip
+  files ending in `_test.exs` or living under a `test/` directory. It defaults
+  to `false` everywhere except
+  `OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns`, where it defaults to
+  `true`.
+
   ## Available Checks
 
   ### Error Handling
@@ -87,9 +93,16 @@ defmodule OeditusCredo do
   - `OeditusCredo.Check.Refactoring.PreferShortFieldAccessCapture` - Detects `fn x -> x.field end` instead of `& &1.field`
   - `OeditusCredo.Check.Refactoring.PreferMapMerge` - Detects chained `Map.put` calls for literal keys instead of `Map.merge`
   - `OeditusCredo.Check.Refactoring.AvoidUnawaitedTaskAsync` - Detects un-awaited `Task.async` fire-and-forget calls
+
+  ### Code Quality
   - `OeditusCredo.Check.Warning.DirectStructUpdate` - Detects struct updates instead of changesets
   - `OeditusCredo.Check.Warning.CallbackHell` - Detects chained case statements
   - `OeditusCredo.Check.Warning.BlockingInPlug` - Detects blocking operations in Plug functions
+  - `OeditusCredo.Check.Warning.UnsafeMapAccess` - Detects bracket access on maps where dot access is safer (requires `typle` and Elixir 1.20+)
+
+  ### Refactoring Suggestions
+  - `OeditusCredo.Check.Refactoring.SuggestFSM` - Detects imperative status/state management (suggests `Finitomata` or `:gen_statem`)
+  - `OeditusCredo.Check.Refactoring.ChangeRiskAntiPatterns` - Flags functions with a high CRAP score (complex and under-tested); opt-in, requires persisted coverage data
 
   ### LiveView & Templates
   - `OeditusCredo.Check.Warning.MissingThrottle` - Detects form inputs without phx-debounce/throttle

@@ -82,6 +82,11 @@ defmodule OeditusCredo do
   - `OeditusCredo.Check.Refactoring.PreferPatternMatchingForEmptiness` - Detects `Enum.count(list) > 0` instead of `[_ | _]` or `[]`
   - `OeditusCredo.Check.Refactoring.AvoidSinglePipe` - Detects single-stage `x |> f()` pipes instead of `f(x)`
   - `OeditusCredo.Check.Refactoring.PreferDotAccessForStructs` - Detects `struct[:field]` bracket access instead of `struct.field`
+  - `OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex` - Detects `Regex.match?` for simple prefix/suffix checks
+  - `OeditusCredo.Check.Refactoring.PreferFunctionCapture` - Detects `fn x -> Module.func(x) end` instead of `&Module.func/1`
+  - `OeditusCredo.Check.Refactoring.PreferShortFieldAccessCapture` - Detects `fn x -> x.field end` instead of `& &1.field`
+  - `OeditusCredo.Check.Refactoring.PreferMapMerge` - Detects chained `Map.put` calls for literal keys instead of `Map.merge`
+  - `OeditusCredo.Check.Refactoring.AvoidUnawaitedTaskAsync` - Detects un-awaited `Task.async` fire-and-forget calls
   - `OeditusCredo.Check.Warning.DirectStructUpdate` - Detects struct updates instead of changesets
   - `OeditusCredo.Check.Warning.CallbackHell` - Detects chained case statements
   - `OeditusCredo.Check.Warning.BlockingInPlug` - Detects blocking operations in Plug functions

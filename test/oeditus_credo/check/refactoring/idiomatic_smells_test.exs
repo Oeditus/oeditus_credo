@@ -2,21 +2,26 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
   use Credo.Test.Case
 
   alias OeditusCredo.Check.Refactoring.{
-    AvoidSinglePipe,
     PreferCasePatternMatching,
-    PreferDestructuring,
-    PreferDotAccessForStructs,
-    PreferForComprehensionOverFilterMap,
-    PreferInplaceBinaryMatching,
-    PreferInplaceListMatching,
-    PreferInplaceMapMatching,
-    PreferListPrepend,
-    PreferMultiHeadForNil,
     PreferMultiHeadFunction,
-    PreferPatternMatchingForEmptiness,
     PreferPipelineOperator,
+    PreferInplaceMapMatching,
+    PreferInplaceListMatching,
+    PreferInplaceBinaryMatching,
+    PreferDestructuring,
+    PreferMultiHeadForNil,
+    PreferWithClause,
     PreferTaggedTuplesForErrors,
-    PreferWithClause
+    PreferForComprehensionOverFilterMap,
+    PreferListPrepend,
+    PreferPatternMatchingForEmptiness,
+    AvoidSinglePipe,
+    PreferDotAccessForStructs,
+    PreferStringBoundariesOverRegex,
+    PreferFunctionCapture,
+    PreferShortFieldAccessCapture,
+    PreferMapMerge,
+    AvoidUnawaitedTaskAsync
   }
 
   describe "PreferCasePatternMatching" do
@@ -260,6 +265,82 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
       """
       |> to_source_file()
       |> run_check(PreferDotAccessForStructs)
+      |> assert_issue()
+    end
+  end
+
+  describe "PreferStringBoundariesOverRegex" do
+    test "reports Regex.match? for prefix" do
+      """
+      defmodule Test do
+        def run(url) do
+          Regex.match?(~r/^https:/, url)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferStringBoundariesOverRegex)
+      |> assert_issue()
+    end
+  end
+
+  describe "PreferFunctionCapture" do
+    test "reports fn x -> Module.func(x) end" do
+      """
+      defmodule Test do
+        def run(list) do
+          Enum.map(list, fn s -> String.trim(s) end)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferFunctionCapture)
+      |> assert_issue()
+    end
+  end
+
+  describe "PreferShortFieldAccessCapture" do
+    test "reports fn x -> x.field end" do
+      """
+      defmodule Test do
+        def run(users) do
+          Enum.map(users, fn u -> u.id end)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferShortFieldAccessCapture)
+      |> assert_issue()
+    end
+  end
+
+  describe "PreferMapMerge" do
+    test "reports chained Map.put calls" do
+      """
+      defmodule Test do
+        def run(map) do
+          map |> Map.put(:a, 1) |> Map.put(:b, 2)
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferMapMerge)
+      |> assert_issue()
+    end
+  end
+
+  describe "AvoidUnawaitedTaskAsync" do
+    test "reports unawaited Task.async in block" do
+      """
+      defmodule Test do
+        def run(user) do
+          Task.async(fn -> user end)
+          :ok
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(AvoidUnawaitedTaskAsync)
       |> assert_issue()
     end
   end

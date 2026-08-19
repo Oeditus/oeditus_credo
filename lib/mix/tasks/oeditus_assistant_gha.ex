@@ -181,9 +181,10 @@ defmodule Mix.Tasks.OeditusAssistantGha do
             "Evaluate Elixir PR diffs against OeditusCredo rules:\\n"
             "- Error Handling: match {:ok, _} with handling, case error branches, try/rescue re-raising\\n"
             "- DB/Perf: avoid N+1 queries in Enum loops, Repo.all |> Enum.filter, missing preloads\\n"
-            "- LiveView/Concurrency: Task.Supervisor for async tasks, avoid unawaited Task.async, no blocking in GenServer/LiveView/Plug, phx-debounce\\n"
-            "- Refactoring: case over if/cond, multi-head over parameter if, pipe operator, %{} map match, [_|_] list match, destructuring, for comprehensions, Map.merge\\n"
-            "- Security (CWE Top 25): SQL injection, OS command injection, code injection, XSS raw/1, missing auth/authorization, IDOR, sensitive logging, credentials, unsafe binary_to_term, path traversal, CSRF, SSRF, TOCTOU."
+            "- LiveView/Concurrency: Task.Supervisor for async tasks, avoid unawaited Task.async, no blocking in GenServer/LiveView/Plug, start_async/handle_async in handle_event, phx-debounce/throttle, phx-* over inline JS\\n"
+            "- Code Quality & Struct/Map Access: Ecto changesets over direct struct updates, dot access map.key/struct.key over bracket access, with over nested case\\n"
+            "- Refactoring: case over if/cond, multi-head over parameter if, pipe operator, %{} map match, [_|_] list match, binary match, destructuring, tagged tuples over try/rescue, for comprehensions, Map.merge, string boundaries over regex, capture syntax\\n"
+            "- Security (CWE Top 25): SQL injection, OS command injection, code injection, XSS raw/1, missing auth/authorization, auth order before Repo, no negated role checks, IDOR, sensitive logging, credentials, unsafe binary_to_term, path traversal, file upload validation, CSRF, SSRF, TOCTOU."
         )
 
     def call_openai_api(api_key, model, prompt, diff):

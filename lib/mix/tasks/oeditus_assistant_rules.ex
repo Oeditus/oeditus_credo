@@ -931,6 +931,26 @@ defmodule Mix.Tasks.OeditusAssistantRules do
     call in the function body. Checking *after* the operation has already
     been executed is useless (CWE-863).
 
+    ### Avoid negated role checks for authorization decisions
+
+    Using negation patterns like `if user.role != :admin` or `unless user.role == :admin` for
+    security authorization decisions can easily leak access if new roles are added (CWE-863).
+    Always explicitly check allowed roles.
+
+    Bad:
+    ```elixir
+    if user.role != :admin do
+      {:error, :unauthorized}
+    end
+    ```
+
+    Good:
+    ```elixir
+    if user.role in [:user, :guest] do
+      {:error, :unauthorized}
+    end
+    ```
+
     ### Always scope database lookups to the current user (prevent IDOR)
 
     When fetching resources by user-provided IDs with `Repo.get/get!/get_by`,

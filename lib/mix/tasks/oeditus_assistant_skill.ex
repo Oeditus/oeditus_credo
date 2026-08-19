@@ -295,6 +295,29 @@ defmodule Mix.Tasks.OeditusAssistantSkill do
       end
       ```
 
+    #### Rule: Use `start_async`/`handle_async` for blocking work in `handle_event`
+    - **Anti-Pattern**: Performing database queries or HTTP calls synchronously inside a LiveView `handle_event` blocks UI updates. Use `start_async` and handle results in `handle_async`.
+    - **Refactoring**:
+      ```elixir
+      # ❌ Bad
+      def handle_event("load", _params, socket) do
+        data = Repo.all(Post)
+        {:noreply, assign(socket, :posts, data)}
+      end
+
+      # ✅ Good
+      def handle_event("load", _params, socket) do
+        {:noreply, start_async(socket, :posts, fn -> Repo.all(Post) end)}
+      end
+
+      def handle_async(:posts, {:ok, posts}, socket) do
+        {:noreply, assign(socket, :posts, posts)}
+      end
+      ```
+
+    #### Rule: Avoid blocking operations in Plug functions
+    - **Anti-Pattern**: Performing expensive DB queries or external API calls inside Plug pipelines blocks the HTTP connection handler. Move heavy work to asynchronous tasks or controller actions.
+
     #### Rule: Use `phx-debounce` or `phx-throttle` on form inputs
     - **Anti-Pattern**: Form text inputs using `phx-change` without throttling send a LiveView websocket event on every single keystroke.
     - **Refactoring**:
@@ -305,12 +328,23 @@ defmodule Mix.Tasks.OeditusAssistantSkill do
       <%!-- ✅ Good --%>
       <input type="text" name="search" phx-change="search" phx-debounce="300" />
       ```
+
+    #### Rule: Use `phx-*` bindings instead of inline JavaScript handlers
+    - **Anti-Pattern**: Using inline event attributes like `onclick`, `onchange`, or `onkeyup` in LiveView templates instead of LiveView event bindings (`phx-click`, `phx-change`).
+    - **Refactoring**:
+      ```heex
+      <%!-- ❌ Bad --%>
+      <button onclick="alert('hi')">Click</button>
+
+      <%!-- ✅ Good --%>
+      <button phx-click="show_alert">Click</button>
+      ```
     """
   end
 
   defp code_quality_rules do
     """
-    ### 🧹 Code Quality & Struct Access
+    ### 🧹 Code Quality & Struct/Map Access
 
     #### Rule: Do not perform direct struct updates when changesets are appropriate
     - **Anti-Pattern**: Updating Ecto struct fields directly with `%{struct | field: val}` or `Map.put` bypasses validation and field casting.
@@ -323,8 +357,8 @@ defmodule Mix.Tasks.OeditusAssistantSkill do
       User.changeset(user, %{email: new_email})
       ```
 
-    #### Rule: Prefer dot notation `struct.field` over bracket access `struct[:field]`
-    - **Anti-Pattern**: Structs do not implement the `Access` protocol by default. Using `struct[:field]` raises `UndefinedFunctionError` unless `Access` is explicitly implemented.
+    #### Rule: Prefer dot notation `struct.field` / `map.field` over bracket access `struct[:field]` / `map[:field]`
+    - **Anti-Pattern**: Structs do not implement the `Access` protocol by default (`UndefinedFunctionError`). For maps with known atom keys, bracket access silently returns `nil` on missing keys. Use dot access (`struct.field` / `map.field`) to fail loudly on missing keys.
     - **Refactoring**:
       ```elixir
       # ❌ Bad
@@ -552,6 +586,24 @@ defmodule Mix.Tasks.OeditusAssistantSkill do
       Enum.map(users, & &1.id)
       ```
 
+    #### Rule: Prefer tagged tuples over `try...rescue` for control flow
+    - **Anti-Pattern**: Exception handling with `try...rescue` is expensive on the BEAM and hides expected outcomes. Return tagged tuples `{:ok, val}` or `{:error, reason}` instead.
+    - **Refactoring**:
+      ```elixir
+      # ❌ Bad
+      try do
+        String.to_integer(str)
+      rescue
+        ArgumentError -> :invalid
+      end
+
+      # ✅ Good
+      case Integer.parse(str) do
+        {num, ""} -> {:ok, num}
+        _ -> {:error, :invalid}
+      end
+      ```
+
     #### Rule: Prefer `Map.merge/2` over chained `Map.put` calls
     - **Refactoring**:
       ```elixir
@@ -601,7 +653,18 @@ defmodule Mix.Tasks.OeditusAssistantSkill do
     """
     #### Rule: Enforce Missing Authentication (CWE-306) & Authorization (CWE-862)
     - **Anti-Pattern**: Controller endpoints or LiveView routes accessible without authentication plugs or policy checks.
-    - **Anti-Pattern**: Negated role checks (`if user.role != :admin`) for security authorization decisions (`CWE-863`).
+    - **Anti-Pattern**: Performing sensitive `Repo.delete!/update!/insert!` operations BEFORE running authorization checks (`CWE-863`).
+    - **Anti-Pattern**: Negated role checks (`if user.role != :admin`) for security authorization decisions (`CWE-863`). Always check allowed roles explicitly.
+    - **Refactoring**:
+      ```elixir
+      # ❌ Bad (Authorization after operation)
+      Repo.delete!(post)
+      authorize!(user, :delete, post)
+
+      # ✅ Good (Authorization before operation)
+      authorize!(user, :delete, post)
+      Repo.delete!(post)
+      ```
 
     #### Rule: Prevent Insecure Direct Object References (IDOR) (CWE-639)
     - **Anti-Pattern**: Looking up DB entities using raw user parameters (`id`) without scoping to `current_user`.

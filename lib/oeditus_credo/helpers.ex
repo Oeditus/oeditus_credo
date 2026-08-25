@@ -40,9 +40,7 @@ defmodule OeditusCredo.Helpers do
   """
   @spec alias_to_string(term()) :: String.t()
   def alias_to_string(parts) when is_list(parts) do
-    parts
-    |> Enum.map(&format_alias_part/1)
-    |> Enum.join(".")
+    Enum.map_join(parts, ".", &format_alias_part/1)
   end
 
   def alias_to_string({:__aliases__, _, parts}), do: alias_to_string(parts)

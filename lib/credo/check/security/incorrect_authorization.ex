@@ -59,7 +59,7 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
       end
     end
   end
-  
+
   @doc false
   @impl true
   def param_defaults, do: [exclude_test_files: false, extra_auth_indicators: []]

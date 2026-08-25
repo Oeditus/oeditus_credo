@@ -35,7 +35,7 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
   @sensitive_repo_calls ~w[delete delete! update update! insert insert!]
   @default_auth_indicators ~w[authorize authorize! can? permit? allowed? policy bodyguard]
 
-  import OeditusCredo.Helpers, only: [test_file?: 1]
+  import OeditusCredo.Helpers, only: [alias_to_string: 1, test_file?: 1]
 
   @doc false
   @impl true
@@ -51,11 +51,15 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
       extra = Params.get(params, :extra_auth_indicators, __MODULE__)
       indicators = @default_auth_indicators ++ extra
 
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+      try do
+        source_file
+        |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+      rescue
+        _ -> []
+      end
     end
   end
-
+  
   @doc false
   @impl true
   def param_defaults, do: [exclude_test_files: false, extra_auth_indicators: []]
@@ -118,7 +122,7 @@ defmodule OeditusCredo.Check.Security.IncorrectAuthorization do
 
   defp contains_authorization?({{:., _, [{:__aliases__, _, parts}, name]}, _, _args}, indicators)
        when is_list(parts) and is_atom(name) do
-    auth_name?(Enum.join(parts, ".") <> "." <> Atom.to_string(name), indicators)
+    auth_name?(alias_to_string(parts) <> "." <> Atom.to_string(name), indicators)
   end
 
   defp contains_authorization?({:., _, [_left, right_name]}, indicators)

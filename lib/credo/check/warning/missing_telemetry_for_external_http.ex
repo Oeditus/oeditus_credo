@@ -107,7 +107,7 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp do
     {:httpc, [:request]}
   ]
 
-  import OeditusCredo.Helpers, only: [test_file?: 1]
+  import OeditusCredo.Helpers, only: [alias_to_string: 1, test_file?: 1]
 
   @doc false
   @impl true
@@ -123,8 +123,12 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp do
       extra = Params.get(params, :extra_http_modules, __MODULE__)
       clients = @default_http_clients ++ extra
 
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, clients}))
+      try do
+        source_file
+        |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, clients}))
+      rescue
+        _ -> []
+      end
     end
   end
 
@@ -218,7 +222,7 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryForExternalHttp do
       Macro.prewalk(body, :not_found, fn
         {{:., meta, [{:__aliases__, _, client}, method]}, _, _} = ast, :not_found ->
           if http_client_call?(client, method, clients) do
-            {ast, {:ok, meta[:line], Enum.join(client, "."), method}}
+            {ast, {:ok, meta[:line], alias_to_string(client), method}}
           else
             {ast, :not_found}
           end

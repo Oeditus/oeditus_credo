@@ -35,7 +35,7 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
   @sensitive_calls ~w[insert insert! update update! delete delete! query query!]
   @validation_indicators ~w[changeset validate validate_required validate_format cast sanitize]
 
-  import OeditusCredo.Helpers, only: [test_file?: 1]
+  import OeditusCredo.Helpers, only: [alias_to_string: 1, test_file?: 1]
 
   @doc false
   @impl true
@@ -48,8 +48,12 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
          test_file?(source_file.filename) do
       []
     else
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+      try do
+        source_file
+        |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+      rescue
+        _ -> []
+      end
     end
   end
 
@@ -128,7 +132,7 @@ defmodule OeditusCredo.Check.Security.ImproperInputValidation do
 
   defp contains_validation?({{:., _, [{:__aliases__, _, parts}, name]}, _, _args})
        when is_list(parts) and is_atom(name) do
-    validation_name?(Enum.join(parts, ".") <> "." <> Atom.to_string(name))
+    validation_name?(alias_to_string(parts) <> "." <> Atom.to_string(name))
   end
 
   defp contains_validation?({:., _, [_left, right_name]}) when is_atom(right_name) do

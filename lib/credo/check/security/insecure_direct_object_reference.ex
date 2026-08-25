@@ -35,7 +35,7 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
   @repo_fetch_calls ~w[get get! get_by get_by!]
   @default_ownership_indicators ~w[current_user user_id owner_id authorize authorize! policy]
 
-  import OeditusCredo.Helpers, only: [test_file?: 1]
+  import OeditusCredo.Helpers, only: [alias_to_string: 1, test_file?: 1]
 
   @doc false
   @impl true
@@ -51,8 +51,12 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
       extra = Params.get(params, :extra_ownership_indicators, __MODULE__)
       indicators = @default_ownership_indicators ++ extra
 
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+      try do
+        source_file
+        |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+      rescue
+        _ -> []
+      end
     end
   end
 
@@ -125,7 +129,7 @@ defmodule OeditusCredo.Check.Security.InsecureDirectObjectReference do
          indicators
        )
        when is_list(parts) and is_atom(name) do
-    ownership_name?(Enum.join(parts, ".") <> "." <> Atom.to_string(name), indicators)
+    ownership_name?(alias_to_string(parts) <> "." <> Atom.to_string(name), indicators)
   end
 
   defp contains_ownership_indicator?({:., _, [_left, right_name]}, indicators)

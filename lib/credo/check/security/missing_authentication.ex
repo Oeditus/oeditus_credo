@@ -46,7 +46,7 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
 
   @default_sensitive_actions ~w[index show create new update edit delete destroy]
 
-  import OeditusCredo.Helpers, only: [test_file?: 1]
+  import OeditusCredo.Helpers, only: [alias_to_string: 1, test_file?: 1]
 
   @doc false
   @impl true
@@ -61,8 +61,12 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
     else
       actions = Params.get(params, :sensitive_actions, __MODULE__)
 
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, actions}))
+      try do
+        source_file
+        |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, actions}))
+      rescue
+        _ -> []
+      end
     end
   end
 
@@ -98,7 +102,7 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
 
   defp traverse(ast, issues, _ctx), do: {ast, issues}
 
-  defp module_name({:__aliases__, _, parts}) when is_list(parts), do: Enum.join(parts, ".")
+  defp module_name({:__aliases__, _, parts}) when is_list(parts), do: alias_to_string(parts)
   defp module_name(_), do: ""
 
   defp controller_module?(name) do
@@ -135,7 +139,7 @@ defmodule OeditusCredo.Check.Security.MissingAuthentication do
   end
 
   defp plug_name_to_string({:__aliases__, _, parts}) when is_list(parts),
-    do: Enum.join(parts, ".")
+    do: alias_to_string(parts)
 
   defp plug_name_to_string(name) when is_atom(name), do: Atom.to_string(name)
   defp plug_name_to_string(_), do: ""

@@ -61,7 +61,7 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug do
 
   @default_auth_plug_names ["auth", "authenticate", "authorize", "require_user", "ensure_auth"]
 
-  import OeditusCredo.Helpers, only: [test_file?: 1]
+  import OeditusCredo.Helpers, only: [alias_to_string: 1, test_file?: 1]
 
   @doc false
   @impl true
@@ -77,8 +77,12 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug do
       extra = Params.get(params, :extra_auth_plug_names, __MODULE__)
       plug_names = @default_auth_plug_names ++ extra
 
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, plug_names}))
+      try do
+        source_file
+        |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, plug_names}))
+      rescue
+        _ -> []
+      end
     end
   end
 
@@ -117,7 +121,7 @@ defmodule OeditusCredo.Check.Warning.MissingTelemetryInAuthPlug do
 
   # Detect auth-related module names
   defp auth_plug_module?(module_name, plug_names) when is_list(module_name) do
-    module_str = module_name |> Enum.join(".") |> String.downcase()
+    module_str = module_name |> alias_to_string() |> String.downcase()
     Enum.any?(plug_names, &String.contains?(module_str, &1))
   end
 

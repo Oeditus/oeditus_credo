@@ -30,4 +30,29 @@ defmodule OeditusCredo.HelpersTest do
       refute Helpers.test_file?("lib/contest/module.ex")
     end
   end
+
+  describe "alias_to_string/1" do
+    test "converts atom list to string" do
+      assert Helpers.alias_to_string([:Repo, :User]) == "Repo.User"
+    end
+
+    test "handles {:__MODULE__, _, nil} in alias parts" do
+      ast_parts = [{:__MODULE__, [line: 4], nil}, :Pigeon]
+      assert Helpers.alias_to_string(ast_parts) == "__MODULE__.Pigeon"
+    end
+
+    test "handles module attributes and other AST nodes in parts" do
+      attr_parts = [{:@, [], [{:sub_mod, [], nil}]}, :Worker]
+      assert Helpers.alias_to_string(attr_parts) == "@sub_mod.Worker"
+    end
+
+    test "handles {:__aliases__, _, parts} AST" do
+      aliases_ast = {:__aliases__, [], [{:__MODULE__, [], nil}, :Sub]}
+      assert Helpers.alias_to_string(aliases_ast) == "__MODULE__.Sub"
+    end
+
+    test "handles single atom" do
+      assert Helpers.alias_to_string(:Repo) == "Repo"
+    end
+  end
 end

@@ -379,6 +379,50 @@ defmodule OeditusCredo.Check.Security.SecurityChecksTest do
     |> refute_issues()
   end
 
+  test "CWE-863: handles __MODULE__ sub-module call after sensitive operation without crashing" do
+    """
+    defmodule Repro do
+      def push(notification, user) do
+        Repo.delete(user)
+        __MODULE__.Pigeon.async_push(notification)
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(IncorrectAuthorization)
+    |> refute_issues()
+  end
+
+  test "CWE-863: handles module attributes and unquote calls after sensitive operation without crashing" do
+    """
+    defmodule Repro do
+      @sub_module Sub
+      def push(notification, user) do
+        Repo.delete(user)
+        @sub_module.async_push(notification)
+        unquote(mod).async_push(notification)
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(IncorrectAuthorization)
+    |> refute_issues()
+  end
+
+  test "CWE-863: detects auth check when using __MODULE__ sub-module call after sensitive operation" do
+    """
+    defmodule Repro do
+      def push(notification, user) do
+        Repo.delete(user)
+        __MODULE__.Auth.authorize!(user)
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(IncorrectAuthorization)
+    |> assert_issue()
+  end
+
   # ── CWE-639: IDOR ──────────────────────────────────────────────────
 
   alias OeditusCredo.Check.Security.InsecureDirectObjectReference

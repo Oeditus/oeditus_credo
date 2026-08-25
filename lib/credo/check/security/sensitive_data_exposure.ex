@@ -41,7 +41,7 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
   @logging_mods [[:Logger], [:IO]]
   @logging_functions ~w[debug info warning warn error inspect puts]
 
-  import OeditusCredo.Helpers, only: [test_file?: 1]
+  import OeditusCredo.Helpers, only: [alias_to_string: 1, test_file?: 1]
 
   @doc false
   @impl true
@@ -57,8 +57,12 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
       extra = Params.get(params, :extra_sensitive_terms, __MODULE__)
       terms = @default_sensitive_terms ++ extra
 
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, terms}))
+      try do
+        source_file
+        |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, terms}))
+      rescue
+        _ -> []
+      end
     end
   end
 
@@ -74,7 +78,7 @@ defmodule OeditusCredo.Check.Security.SensitiveDataExposure do
        )
        when is_list(mod_parts) and is_atom(fun) and is_list(args) do
     if logging_call?(mod_parts, fun) and args_contain_sensitive_data?(args, terms) do
-      {ast, [issue_for(issue_meta, meta[:line], "#{Enum.join(mod_parts, ".")}.#{fun}") | issues]}
+      {ast, [issue_for(issue_meta, meta[:line], "#{alias_to_string(mod_parts)}.#{fun}") | issues]}
     else
       {ast, issues}
     end

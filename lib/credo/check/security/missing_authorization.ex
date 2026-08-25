@@ -41,7 +41,7 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
   @sensitive_repo_calls ~w[delete delete! update update! insert insert!]
   @default_auth_indicators ~w[authorize authorize! can? permit? allowed? current_user policy bodyguard]
 
-  import OeditusCredo.Helpers, only: [test_file?: 1]
+  import OeditusCredo.Helpers, only: [alias_to_string: 1, test_file?: 1]
 
   @doc false
   @impl true
@@ -57,8 +57,12 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
       extra = Params.get(params, :extra_auth_indicators, __MODULE__)
       indicators = @default_auth_indicators ++ extra
 
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+      try do
+        source_file
+        |> Credo.Code.prewalk(&traverse(&1, &2, {issue_meta, indicators}))
+      rescue
+        _ -> []
+      end
     end
   end
 
@@ -126,7 +130,7 @@ defmodule OeditusCredo.Check.Security.MissingAuthorization do
          indicators
        )
        when is_list(mod_parts) and is_atom(name) do
-    full_name = Enum.join(mod_parts, ".") <> "." <> Atom.to_string(name)
+    full_name = alias_to_string(mod_parts) <> "." <> Atom.to_string(name)
     auth_name?(full_name, indicators)
   end
 

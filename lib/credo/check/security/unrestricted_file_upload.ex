@@ -38,7 +38,7 @@ defmodule OeditusCredo.Check.Security.UnrestrictedFileUpload do
   @file_write_calls ~w[cp cp! copy copy! write write! rename rename!]
   @validation_indicators ~w[extname content_type extension mime_type allowed validate file_type]
 
-  import OeditusCredo.Helpers, only: [test_file?: 1]
+  import OeditusCredo.Helpers, only: [alias_to_string: 1, test_file?: 1]
 
   @doc false
   @impl true
@@ -51,8 +51,12 @@ defmodule OeditusCredo.Check.Security.UnrestrictedFileUpload do
          test_file?(source_file.filename) do
       []
     else
-      source_file
-      |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+      try do
+        source_file
+        |> Credo.Code.prewalk(&traverse(&1, &2, issue_meta))
+      rescue
+        _ -> []
+      end
     end
   end
 
@@ -93,7 +97,7 @@ defmodule OeditusCredo.Check.Security.UnrestrictedFileUpload do
       {:%{}, _, pairs} when is_list(pairs) ->
         Enum.any?(pairs, fn
           {_key, {:%, _, [{:__aliases__, _, parts}, _]}} ->
-            Enum.join(parts, ".") |> String.contains?("Upload")
+            alias_to_string(parts) |> String.contains?("Upload")
 
           _ ->
             false

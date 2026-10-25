@@ -1,6 +1,11 @@
 defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadForNil do
   @moduledoc """
-  Flags guard checks `is_nil(val)` or `not is_nil(val)` in function definitions when multi-head pattern matching on `nil` should be used.
+  Flags `not is_nil(val)` guards in function definitions when multi-head pattern matching on `nil` should be used.
+
+  Only the negated form is reported. A positive `when is_nil(val)` guard is
+  already the most precise way to say "this clause is for `nil`" (and is often
+  used to *narrow* a clause before falling through to a generic one), so it is
+  not a smell.
   """
 
   use Credo.Check,
@@ -8,7 +13,7 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadForNil do
     category: :refactoring,
     explanations: [
       check: """
-      Checking `is_nil/1` in guards is unnecessary when pattern matching `nil` directly in multi-head functions.
+      Checking `not is_nil/1` in guards is unnecessary when pattern matching `nil` directly in multi-head functions.
 
       Bad:
 
@@ -20,6 +25,10 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadForNil do
 
           def process(nil), do: :error
           def process(val), do: do_process(val)
+
+      A positive `when is_nil(val)` guard is not reported: it is already the
+      most precise way to match `nil` (and is commonly used to narrow a clause
+      before a generic fallback).
       """,
       params: [
         exclude_test_files: "Set to true to skip test files (default: false)"
@@ -46,7 +55,14 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadForNil do
   @impl true
   def param_defaults, do: [exclude_test_files: false]
 
-  defp traverse({:when, meta, [head, guard]} = ast, issues, issue_meta) do
+  # Match definitions, not arbitrary `when` nodes: case patterns may themselves
+  # be call-shaped AST (for example, a three-element tuple).
+  defp traverse(
+         {kind, _, [{:when, meta, [head, guard]}, _body]} = ast,
+         issues,
+         issue_meta
+       )
+       when kind in [:def, :defp] do
     issues =
       case find_nil_guard(guard) do
         nil ->
@@ -72,11 +88,10 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadForNil do
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
-  defp find_nil_guard({:is_nil, _, [{var, _, nil}]}) when is_atom(var), do: var
   defp find_nil_guard({:not, _, [{:is_nil, _, [{var, _, nil}]}]}) when is_atom(var), do: var
   defp find_nil_guard({:and, _, [left, right]}), do: find_nil_guard(left) || find_nil_guard(right)
+  defp find_nil_guard({:or, _, [left, right]}), do: find_nil_guard(left) || find_nil_guard(right)
   defp find_nil_guard(_), do: nil
 
   defp extract_func_name({name, _, _}) when is_atom(name), do: Atom.to_string(name)
-  defp extract_func_name(_), do: "function"
 end

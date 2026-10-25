@@ -1,6 +1,11 @@
 defmodule OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex do
   @moduledoc """
-  Flags `Regex.match?` calls used for basic prefix/suffix checks which should use `String.starts_with?/2` or `String.ends_with?/2`.
+  Flags literal regex prefix checks which can use `String.starts_with?/2`.
+
+  Only regexes that are *exactly* a plain literal prefix (`~r/^abc/`) are
+  reported. Anything the string functions cannot express is ignored: a `$`
+  anchor also matches before a trailing newline, and regex metacharacters,
+  alternation, character classes or flags change the meaning.
   """
 
   use Credo.Check,
@@ -17,6 +22,11 @@ defmodule OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex do
       Good:
 
           String.starts_with?(url, "https:")
+
+      Only plain literal prefixes are reported. A `$` anchor is not reported:
+      unlike `String.ends_with?/2`, it also matches before a trailing newline,
+      so the rewrite would not be equivalent. Regexes containing
+      metacharacters, alternation, character classes or flags are ignored too.
       """,
       params: [
         exclude_test_files: "Set to true to skip test files (default: false)"
@@ -66,10 +76,42 @@ defmodule OeditusCredo.Check.Refactoring.PreferStringBoundariesOverRegex do
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
-  defp simple_regex_boundary?({:sigil_r, _, [{:<<>>, _, [pattern]}, _opts]})
+  # Only a bare literal prefix (`~r/^abc/`) is a `String.starts_with?/2` in
+  # disguise. A `$`-anchored regex is deliberately excluded: `$` also matches
+  # just before a trailing newline, so `Regex.match?(~r/^[0-9a-f]{6}$/, hex)`
+  # accepts `"abcdef\n"` while `String.ends_with?/2` would not, and the
+  # rewrite would silently change behaviour.
+  defp simple_regex_boundary?({:sigil_r, _, [{:<<>>, _, [pattern]}, []]})
        when is_binary(pattern) do
-    String.starts_with?(pattern, "^") or String.ends_with?(pattern, "$")
+    case String.split_at(pattern, 1) do
+      {"^", body} -> plain_literal?(body)
+      _ -> false
+    end
   end
 
   defp simple_regex_boundary?(_), do: false
+
+  # A prefix is only a plain literal when it contains no regex metacharacter
+  # and no escape sequence, i.e. when `String.starts_with?/2` means the same
+  # thing.
+  defp plain_literal?(""), do: false
+
+  defp plain_literal?(body),
+    do:
+      not String.contains?(body, [
+        "\\",
+        ".",
+        "^",
+        "$",
+        "*",
+        "+",
+        "?",
+        "(",
+        ")",
+        "[",
+        "]",
+        "{",
+        "}",
+        "|"
+      ])
 end

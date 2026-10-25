@@ -1,6 +1,12 @@
 defmodule OeditusCredo.Check.Refactoring.PreferWithClause do
   @moduledoc """
   Flags nested `case` statements (pyramid of doom) that should be refactored into a `with` clause.
+
+  A nested `case` is only reported when it is genuinely `with`-shaped: the
+  success clause's body must be exactly the inner `case`, whose expression
+  uses a variable bound by the outer success pattern. Cases with catch-all
+  fallbacks are reported only when both steps have the same fallback body.
+  Divergent parsing branches and fallback cascades are left alone.
   """
 
   use Credo.Check,
@@ -16,9 +22,9 @@ defmodule OeditusCredo.Check.Refactoring.PreferWithClause do
             {:ok, res1} ->
               case step2(res1) do
                 {:ok, res2} -> {:ok, res2}
-                {:error, err} -> {:error, err}
+                _ -> nil
               end
-            {:error, err} -> {:error, err}
+            _ -> nil
           end
 
       Good:
@@ -26,6 +32,18 @@ defmodule OeditusCredo.Check.Refactoring.PreferWithClause do
           with {:ok, res1} <- step1(),
                {:ok, res2} <- step2(res1) do
             {:ok, res2}
+          else
+            _ -> nil
+          end
+
+      Single-success-clause cases and two-clause cases with identical catch-all
+      fallbacks are candidates. Different fallbacks cannot be collapsed into
+      one `with` failure path without changing behaviour.
+
+      For non-exhaustive single-clause cases, preserve exceptions explicitly:
+
+          else
+            unmatched -> raise CaseClauseError, term: unmatched
           end
       """,
       params: [
@@ -56,12 +74,12 @@ defmodule OeditusCredo.Check.Refactoring.PreferWithClause do
   defp traverse({:case, meta, [_expr, [do: clauses]]} = ast, issues, issue_meta)
        when is_list(clauses) do
     issues =
-      if has_nested_case_clause?(clauses) do
+      if nested_case_candidate?(clauses) do
         [
           format_issue(
             issue_meta,
             message:
-              "Found nested `case` statement. Refactor sequential fallible operations into a `with` statement.",
+              "Found nested `case` statement. Refactor sequential fallible operations into `with`, with explicit `else` clauses preserving fallback values or `CaseClauseError` for unmatched input.",
             trigger: "case",
             line_no: meta[:line]
           )
@@ -76,17 +94,80 @@ defmodule OeditusCredo.Check.Refactoring.PreferWithClause do
 
   defp traverse(ast, issues, _issue_meta), do: {ast, issues}
 
-  defp has_nested_case_clause?(clauses) do
-    Enum.any?(clauses, fn
-      {:->, _, [_patterns, body]} -> contains_case?(body)
+  defp nested_case_candidate?([{:->, _, [patterns, body]}]) when is_list(patterns) do
+    case nested_case(body) do
+      {:ok, {:case, _, [_, [do: [_single_clause]]]} = inner} ->
+        dispatches_on_bound_var?(inner, patterns)
+
+      _ ->
+        false
+    end
+  end
+
+  defp nested_case_candidate?([
+         {:->, _, [patterns, {:case, _, [_expr, [do: inner_clauses]]} = inner]},
+         fallback
+       ]) do
+    with [_, inner_fallback] <- inner_clauses,
+         {:ok, outer_body} <- fallback_body(fallback),
+         {:ok, inner_body} <- fallback_body(inner_fallback) do
+      same_ast?(outer_body, inner_body) and
+        not references_bound_vars?(outer_body, patterns) and
+        dispatches_on_bound_var?(inner, patterns)
+    else
       _ -> false
+    end
+  end
+
+  defp nested_case_candidate?(_clauses), do: false
+
+  defp fallback_body({:->, _, [[{:_, _, context}], body]}) when is_atom(context),
+    do: {:ok, body}
+
+  defp fallback_body(_), do: :error
+
+  defp same_ast?(left, right), do: without_metadata(left) == without_metadata(right)
+
+  defp without_metadata(ast) do
+    Macro.prewalk(ast, fn
+      {name, meta, args} when is_list(meta) -> {name, [], args}
+      node -> node
     end)
   end
 
-  defp contains_case?({:case, _, _}), do: true
+  defp references_bound_vars?(body, patterns) do
+    Enum.any?(bound_vars(patterns), &var_referenced?(body, &1))
+  end
 
-  defp contains_case?({:__block__, _, block}) when is_list(block),
-    do: Enum.any?(block, &contains_case?/1)
+  defp nested_case({:case, _, [_expr, _clauses]} = inner), do: {:ok, inner}
+  defp nested_case({:__block__, _, [inner]}), do: nested_case(inner)
+  defp nested_case(_), do: :error
 
-  defp contains_case?(_), do: false
+  defp dispatches_on_bound_var?({:case, _, [expr, _clauses]}, patterns) do
+    bound = bound_vars(patterns)
+    Enum.any?(bound, &var_referenced?(expr, &1))
+  end
+
+  defp bound_vars(patterns) do
+    patterns |> pattern_vars() |> Enum.uniq()
+  end
+
+  defp pattern_vars({:^, _, _}), do: []
+  defp pattern_vars({:when, _, [pattern | _guards]}), do: pattern_vars(pattern)
+  defp pattern_vars({:_, _, _}), do: []
+  defp pattern_vars({var, _, ctx}) when is_atom(var) and is_atom(ctx), do: [var]
+  defp pattern_vars({_, _, args}) when is_list(args), do: pattern_vars(args)
+  defp pattern_vars({left, right}), do: pattern_vars([left, right])
+  defp pattern_vars(patterns) when is_list(patterns), do: Enum.flat_map(patterns, &pattern_vars/1)
+  defp pattern_vars(_), do: []
+
+  defp var_referenced?(ast, var) do
+    {_ast, found?} =
+      Macro.prewalk(ast, false, fn
+        {^var, _, ctx} = node, _acc when is_atom(ctx) -> {node, true}
+        node, acc -> {node, acc}
+      end)
+
+    found?
+  end
 end

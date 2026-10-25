@@ -5,9 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- `AvoidSinglePipe` no longer reports the first stage of multi-stage chains. Structural traversal preserves independent pipes inside callbacks, captures, arguments, and chain seeds; findings retain their source columns.
+- `PreferPipelineOperator` now checks real call shapes and intermediate-variable reuse. It excludes operators, control flow, literal fixtures, duplicate uses in arguments or callable expressions, and bindings needed later. Safe prefixes remain candidates, while zero-arity producers followed by a single consumer are skipped to avoid conflicting with `AvoidSinglePipe`.
+- `PreferDestructuring` no longer recommends required-key patterns for optional `Map.get/2` lookups. Map suggestions require a literal containing the key; dynamic tuple indexes and defaulted `Map.get/3` calls are left alone.
+- `PreferMultiHeadForNil` is restricted to actual `def`/`defp` heads. Guards in `with`, `case`, generators, and anonymous functions, including call-shaped tuple patterns, are not function definitions. Positive `is_nil/1` guards remain unreported.
+- `PreferWithClause` distinguishes sequential dependent operations from parsing branches and fallback cascades. Identical catch-all fallbacks remain valid candidates; divergent fallbacks and pinned-only dependencies are excluded.
+- `PreferMultiHeadFunction` requires complete guard-compatible parameter discrimination rather than arbitrary references to parameters. Option lookups, arbitrary `is_*` predicates, and compound conditions containing non-guard calls are not reported.
+- `PreferStringBoundariesOverRegex` only reports nonempty plain literal prefixes with no regex options. Character classes, quantifiers, interpolation, alternation, and `$` suffixes are excluded because their semantics differ from string boundaries.
+- `PreferTaggedTuplesForErrors` only reports `try` blocks with `rescue`, excluding `after` cleanup and `else` normalization. Plain cleanup and catch blocks are not error-control-flow suggestions.
+
+### Testing
+- Pipeline liveness includes enclosing continuations of non-scoping blocks. Non-exhaustive `case` suggestions require explicit `else` handling to preserve `CaseClauseError`; mixed raising/value-returning cases are not combined.
+- Added focused positive and negative regressions for all eight refactoring checks, including application-shaped optional metadata, reused bindings, nested pipe chains, cleanup, shared fallbacks, and executable demonstrations of map/regex semantic differences.
+
 ### Documentation
 - README, QUICKSTART.md, STANDALONE.md, STANDALONE_SUMMARY.md, the `OeditusCredo` moduledoc, the generated `.credo.exs` (`OeditusCredo.CLI.default_config/0`) and the ExDoc module groups now cover all 58 checks.
 - Documented that `ChangeRiskAntiPatterns` and `UnsafeMapAccess` are the only two opt-in checks, so `mix oeditus_credo` enables 56 of 58 checks.
+- Documented conservative refactoring boundaries and the trade-off of leaving unknown cases unreported.
 
 ## [0.10.3] - 2026-08-07
 

@@ -98,6 +98,54 @@ OeditusCredo provides 58 comprehensive custom Credo checks that detect common mi
 
 All these checks are somewhat opinionated and might produce false positives. If a warning does not apply to your specific case, you can suppress it with [`# credo:disable-for-next-line`](https://hexdocs.pm/credo/config_comments.html) or any other Credo config comment directive.
 
+### Refactoring analysis boundaries
+
+Refactoring suggestions should preserve behavior, not merely resemble a preferred
+syntax. The idiomatic checks deliberately use conservative syntactic rules:
+
+- **AvoidSinglePipe** reports only complete one-stage chains. The first stage of
+  a longer chain is not a single pipe. Pipelines inside callbacks, captures, and
+  call arguments are checked independently, with distinct source columns.
+- **PreferPipelineOperator** requires real function-call stages and disposable
+  intermediate bindings. It excludes operators, literals, and control flow, and
+  preserves variables reused later, in extra arguments, or as the callable itself.
+  Later uses outside non-scoping parenthesized blocks are included. Rebindings
+  and shadowed variable names are treated conservatively and may suppress an
+  otherwise valid suggestion.
+  A safe prefix can still be suggested without removing its final binding.
+  Suggested rewrites must yield at least two pipe stages: a zero-argument producer
+  followed by one consumer is left alone to avoid contradicting `AvoidSinglePipe`.
+- **PreferDestructuring** reports non-negative literal `elem/2` indexes and atom-key
+  `Map.get/2` calls on map literals explicitly containing that key. Arbitrary maps
+  may omit keys: `Map.get(item, :author)` returns `nil`, but `%{author: author} = item`
+  fails. Defaults (`Map.get/3`) and dynamic indexes are not pattern-match candidates.
+  Key presence is not inferred from external types, schemas, or function names.
+- **PreferMultiHeadForNil** only inspects actual `def`/`defp` guards, not guards in
+  `with`, `case`, generators, or anonymous functions. Positive `is_nil/1` guards
+  are left alone.
+- **PreferMultiHeadFunction** requires the complete condition to be expressible
+  with recognized argument discriminators: literal comparisons, literal-list
+  membership, or built-in type guards. Truthy option lookups and arbitrary
+  predicates, even when mixed with a valid discriminator, are not reported.
+- **PreferWithClause** recognizes directly nested dependent steps. Multi-branch
+  cases require identical catch-all fallback bodies; fallback searches and parsing
+  branches with different failure behavior remain cases. Pinned values are not
+  treated as newly bound step results. When refactoring non-exhaustive cases,
+  preserve their exception behavior explicitly rather than returning unmatched values.
+  Such candidates require both cases to be single-clause, and the issue explicitly
+  calls for an `else` clause raising `CaseClauseError` with the unmatched term.
+- **PreferStringBoundariesOverRegex** only reports nonempty plain literal prefixes
+  without regex options. Character classes, quantifiers, alternation, interpolation,
+  and escapes are not literal string boundaries. `$` also matches before a trailing
+  newline, so a suffix anchored with `$` is not equivalent to `String.ends_with?/2`.
+- **PreferTaggedTuplesForErrors** requires a `rescue` clause and excludes `after`
+  cleanup and `else` normalization. A plain `try … after` or `try … catch` is not
+  a tagged-tuple error-handling suggestion.
+
+These checks do not expand arbitrary macros or perform interprocedural analysis.
+Unknown cases are intentionally left alone rather than recommending a potentially
+behavior-changing rewrite.
+
 ## Installation
 
 ### As a Project Dependency

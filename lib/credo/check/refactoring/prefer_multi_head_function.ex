@@ -2,6 +2,13 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
   @moduledoc """
   Flags top-level function bodies that use `if` or `cond` to branch on function parameters
   instead of defining multiple function heads with pattern matching.
+
+  Only fully guard-compatible *discriminating* conditions are reported -- equality against a literal,
+  membership in a literal list, or a type/emptiness guard (`is_nil/1`,
+  `is_binary/1`, `is_atom/1`, ...). A plain boolean flag
+  (`if opts[:write], do: ...`) is not a multi-head candidate: it has no
+  pattern to match on, and splitting it would produce a confusing
+  `def f(opts, true)` / `def f(opts, false)` pair.
   """
 
   use Credo.Check,
@@ -26,6 +33,11 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
 
           def process(:fast), do: run_fast()
           def process(:slow), do: run_slow()
+
+      Only discriminating conditions are reported: equality with a literal,
+      membership in a literal list, or a type/emptiness guard. A boolean flag
+      (`if opts[:write], do: ...`) has no pattern to match on and is not a
+      multi-head candidate.
       """,
       params: [
         exclude_test_files: "Set to true to skip test files (default: false)"
@@ -59,7 +71,7 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
     issues =
       case root_conditional(body) do
         {:if, if_meta, cond_expr} ->
-          if condition_references_arg?(cond_expr, arg_names) do
+          if discriminating_condition?(cond_expr, arg_names) do
             func_name = extract_func_name(head)
 
             [
@@ -77,7 +89,7 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
           end
 
         {:cond, cond_meta, clauses} ->
-          if cond_clauses_reference_args?(clauses, arg_names) do
+          if cond_clauses_discriminate?(clauses, arg_names) do
             func_name = extract_func_name(head)
 
             [
@@ -124,25 +136,78 @@ defmodule OeditusCredo.Check.Refactoring.PreferMultiHeadFunction do
   defp extract_func_name({name, _, _}) when is_atom(name), do: Atom.to_string(name)
   defp extract_func_name(_), do: "function"
 
-  defp condition_references_arg?(cond_expr, arg_names) do
-    {_ast, found?} =
-      Macro.prewalk(cond_expr, false, fn
-        {var, _, nil} = node, _acc when is_atom(var) ->
-          if var in arg_names, do: {node, true}, else: {node, false}
-
-        node, acc ->
-          {node, acc}
-      end)
-
-    found?
+  # A condition is only a multi-head candidate when it *discriminates* on the
+  # argument: `mode == :fast`, `mode in [:a, :b]`, `is_nil(value)`. A bare
+  # truthiness check (`if opts[:write]`, `if flag`) has no pattern to match on,
+  # so it is not reported.
+  defp discriminating_condition?(cond_expr, arg_names) do
+    discriminator?(cond_expr, arg_names)
   end
 
-  defp cond_clauses_reference_args?(clauses, arg_names) when is_list(clauses) do
+  defp discriminator?({op, _, [lhs, rhs]}, arg_names) when op in [:==, :!=, :===, :!==] do
+    (arg_reference?(lhs, arg_names) and literal?(rhs)) or
+      (arg_reference?(rhs, arg_names) and literal?(lhs))
+  end
+
+  defp discriminator?({:in, _, [lhs, rhs]}, arg_names) do
+    arg_reference?(lhs, arg_names) and literal_list?(rhs)
+  end
+
+  defp discriminator?({:not, _, [inner]}, arg_names), do: discriminator?(inner, arg_names)
+
+  defp discriminator?({:and, _, [lhs, rhs]}, arg_names),
+    do: discriminator?(lhs, arg_names) and discriminator?(rhs, arg_names)
+
+  defp discriminator?({:or, _, [lhs, rhs]}, arg_names),
+    do: discriminator?(lhs, arg_names) and discriminator?(rhs, arg_names)
+
+  defp discriminator?({guard, _, [arg]}, arg_names)
+       when guard in [
+              :is_nil,
+              :is_atom,
+              :is_binary,
+              :is_bitstring,
+              :is_boolean,
+              :is_float,
+              :is_function,
+              :is_integer,
+              :is_list,
+              :is_map,
+              :is_number,
+              :is_pid,
+              :is_port,
+              :is_reference,
+              :is_tuple
+            ] do
+    arg_reference?(arg, arg_names)
+  end
+
+  defp discriminator?(_, _), do: false
+
+  defp arg_reference?({var, _, ctx}, arg_names) when is_atom(var) and is_atom(ctx),
+    do: var in arg_names
+
+  defp arg_reference?(_, _), do: false
+
+  defp literal?(value), do: is_atom(value) or is_number(value) or is_binary(value)
+
+  defp literal_list?(list) when is_list(list) do
+    Enum.all?(list, &(is_atom(&1) or is_number(&1) or is_binary(&1)))
+  end
+
+  defp literal_list?(_), do: false
+
+  defp cond_clauses_discriminate?(clauses, arg_names) when is_list(clauses) do
     Enum.any?(clauses, fn
-      {:->, _, [[cond_expr], _body]} -> condition_references_arg?(cond_expr, arg_names)
+      {:->, _, [[condition], _]} -> discriminating_condition?(condition, arg_names)
       _ -> false
-    end)
+    end) and
+      Enum.all?(clauses, fn
+        {:->, _, [[true], _]} -> true
+        {:->, _, [[condition], _]} -> discriminating_condition?(condition, arg_names)
+        _ -> false
+      end)
   end
 
-  defp cond_clauses_reference_args?(_, _), do: false
+  defp cond_clauses_discriminate?(_, _), do: false
 end

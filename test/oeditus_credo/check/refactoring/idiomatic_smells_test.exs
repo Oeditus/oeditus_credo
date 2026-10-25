@@ -151,6 +151,32 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
       |> run_check(PreferMultiHeadForNil)
       |> assert_issue()
     end
+
+    test "does not report a positive is_nil guard" do
+      """
+      defmodule Test do
+        def process(arg) when is_nil(arg) do
+          arg
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferMultiHeadForNil)
+      |> refute_issues()
+    end
+
+    test "does not report a `with` clause guard" do
+      """
+      defmodule Test do
+        def process(input) do
+          with value when not is_nil(value) <- fetch(input), do: value
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferMultiHeadForNil)
+      |> refute_issues()
+    end
   end
 
   describe "PreferWithClause" do
@@ -171,6 +197,45 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
       |> run_check(PreferWithClause)
       |> assert_issue()
     end
+
+    test "does not report a case nested in one arm of a multi-clause case" do
+      """
+      defmodule Test do
+        def run(input) do
+          case f1(input) do
+            {:ok, a} ->
+              case f2(a) do
+                {:ok, b} -> b
+              end
+
+            :error ->
+              nil
+          end
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferWithClause)
+      |> refute_issues()
+    end
+
+    test "does not report a nested case that does not use the bound variable" do
+      """
+      defmodule Test do
+        def run do
+          case f1() do
+            {:ok, _a} ->
+              case f2() do
+                {:ok, b} -> b
+              end
+          end
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferWithClause)
+      |> refute_issues()
+    end
   end
 
   describe "PreferTaggedTuplesForErrors" do
@@ -189,6 +254,44 @@ defmodule OeditusCredo.Check.Refactoring.IdiomaticSmellsTest do
       |> to_source_file()
       |> run_check(PreferTaggedTuplesForErrors)
       |> assert_issue()
+    end
+
+    test "does not report a try with an after block" do
+      """
+      defmodule Test do
+        def run(str) do
+          try do
+            String.to_integer(str)
+          rescue
+            ArgumentError -> :err
+          after
+            cleanup()
+          end
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferTaggedTuplesForErrors)
+      |> refute_issues()
+    end
+
+    test "does not report a try with an else block" do
+      """
+      defmodule Test do
+        def run(str) do
+          try do
+            String.to_integer(str)
+          rescue
+            ArgumentError -> :err
+          else
+            value -> value
+          end
+        end
+      end
+      """
+      |> to_source_file()
+      |> run_check(PreferTaggedTuplesForErrors)
+      |> refute_issues()
     end
   end
 

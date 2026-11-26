@@ -212,4 +212,104 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandlingTest do
     |> run_check(MissingErrorHandling)
     |> assert_issue()
   end
+
+  test "it should NOT report issue for match in defmacro head" do
+    """
+    defmodule MyModule do
+      defmacro example({:ok, value} = result) do
+        value
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in defmacrop head" do
+    """
+    defmodule MyModule do
+      defmacrop example({:ok, value} = result) do
+        value
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in defguard head" do
+    """
+    defmodule MyModule do
+      defguard is_ok({:ok, value} = result) when is_integer(value)
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in defguardp head" do
+    """
+    defmodule MyModule do
+      defguardp is_ok({:ok, value} = result) when is_integer(value)
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in defdelegate head" do
+    """
+    defmodule MyModule do
+      defdelegate example({:ok, value} = result), to: Other
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in guarded def head" do
+    """
+    defmodule MyModule do
+      def example({:ok, value} = result) when is_integer(value) do
+        value
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should STILL report issue for bad match in a guarded def body" do
+    """
+    defmodule MyModule do
+      def example(value) when is_integer(value) do
+        {:ok, result} = transform(value)
+        result
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> assert_issue()
+  end
+
+  test "it should STILL report issue for bad match in a defmacro body" do
+    """
+    defmodule MyModule do
+      defmacro example(ast) do
+        {:ok, result} = transform(ast)
+        result
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> assert_issue()
+  end
 end

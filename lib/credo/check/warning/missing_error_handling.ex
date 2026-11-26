@@ -40,6 +40,10 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandling do
 
   import OeditusCredo.Helpers, only: [test_file?: 1]
 
+  # Definition forms whose head is a clause pattern rather than an expression.
+  @definition_kinds [:def, :defp, :defmacro, :defmacrop, :defdelegate]
+  @guard_definition_kinds [:defguard, :defguardp]
+
   @doc false
   @impl true
   def run(%SourceFile{}, false), do: []
@@ -60,15 +64,23 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandling do
   @impl true
   def param_defaults, do: [exclude_test_files: false]
 
-  # def/defp head patterns are clause patterns - errors are handled by the body.
+  # Definition heads are clause patterns - a mismatch falls through to the next
+  # clause (or raises `FunctionClauseError`), so the body owns error handling.
   defp traverse({kind, meta, [header, body]}, issues, _issue_meta)
-       when kind in [:def, :defp] do
-    {fun_name, fun_meta, args} = header
-    sanitized_args = Macro.prewalk(args, &neutralize_pattern_match/1)
-    {{kind, meta, [{fun_name, fun_meta, sanitized_args}, body]}, issues}
+       when kind in @definition_kinds do
+    {header, issues} = neutralize_head(header, issues)
+    {{kind, meta, [header, body]}, issues}
   end
 
-  # <-/-> patterns destructure a value the clause already handles.
+  # `defguard/defguardp` take a single guarded head and no body.
+  defp traverse({kind, meta, [header]}, issues, _issue_meta)
+       when kind in @guard_definition_kinds do
+    {header, issues} = neutralize_head(header, issues)
+    {{kind, meta, [header]}, issues}
+  end
+
+  # `<-`/`->` patterns destructure a value the clause already handles: on a
+  # mismatch the clause is skipped instead of raising `MatchError`.
   defp traverse({kind, meta, [patterns, rest]}, issues, _issue_meta)
        when kind in [:<-, :->] do
     sanitized_patterns = Macro.prewalk(patterns, &neutralize_pattern_match/1)
@@ -89,6 +101,15 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandling do
   defp traverse(ast, issues, _issue_meta) do
     {ast, issues}
   end
+
+  # A head is either `{name, meta, args}` or `{:when, meta, [call, guard]}`.
+  # Both are 3-tuples, so rebuilding the same shape keeps the AST intact.
+  defp neutralize_head({name, meta, args}, issues) do
+    sanitized_args = Macro.prewalk(args, &neutralize_pattern_match/1)
+    {{name, meta, sanitized_args}, issues}
+  end
+
+  defp neutralize_head(header, issues), do: {header, issues}
 
   # In a clause pattern, drop the `=` and keep just the right operand.
   defp neutralize_pattern_match({:=, _, [_left, right]}), do: right

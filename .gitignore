@@ -38,4 +38,5 @@ oeditus_credo-*.tar
 
 /priv/plts/
 
-
+/.yoke/
+/.ragex/

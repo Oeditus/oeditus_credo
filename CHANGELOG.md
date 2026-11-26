@@ -5,10 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.12.1] - 2026-11-26
 
 ### Fixed
 - `MissingErrorHandling` no longer reports `{:ok, _} = expr` matches that appear in clause patterns, where a mismatch falls through to the next clause instead of raising `MatchError`. Covers `def`/`defp`/`defmacro`/`defmacrop`/`defdelegate` heads, `defguard`/`defguardp` heads, and `<-`/`->` patterns in `with`, `for`, `case`, `fn`, `receive`, and `try`. Standalone matches and matches inside clause bodies are still reported.
+
+## [0.12.0] - 2026-10-25
+
+### Fixed
 - `AvoidSinglePipe` no longer reports the first stage of multi-stage chains. Structural traversal preserves independent pipes inside callbacks, captures, arguments, and chain seeds; findings retain their source columns.
 - `PreferPipelineOperator` now checks real call shapes and intermediate-variable reuse. It excludes operators, control flow, literal fixtures, duplicate uses in arguments or callable expressions, and bindings needed later. Safe prefixes remain candidates, while zero-arity producers followed by a single consumer are skipped to avoid conflicting with `AvoidSinglePipe`.
 - `PreferDestructuring` no longer recommends required-key patterns for optional `Map.get/2` lookups. Map suggestions require a literal containing the key; dynamic tuple indexes and defaulted `Map.get/3` calls are left alone.
@@ -180,6 +184,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Licensing
 - Released under the MIT License
 
+[0.12.1]: https://github.com/oeditus/oeditus_credo/releases/tag/v0.12.1
+[0.12.0]: https://github.com/oeditus/oeditus_credo/releases/tag/v0.12.0
 [0.10.2]: https://github.com/oeditus/oeditus_credo/releases/tag/v0.10.2
 [0.10.0]: https://github.com/oeditus/oeditus_credo/releases/tag/v0.10.0
 [0.9.0]: https://github.com/oeditus/oeditus_credo/releases/tag/v0.9.0

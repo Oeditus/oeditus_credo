@@ -92,4 +92,124 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandlingTest do
     |> run_check(MissingErrorHandling)
     |> refute_issues()
   end
+
+  test "it should NOT report issue for match in case clause pattern with an error clause" do
+    """
+    defmodule MyModule do
+      def example do
+        case start_link(opts) do
+          {:ok, _} = resp ->
+            init()
+            resp
+
+          error ->
+            error
+        end
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in fn clause pattern" do
+    """
+    defmodule MyModule do
+      def example do
+        receive do
+          {:ok, value} = msg -> value
+          {:error, _} = err -> err
+        end
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in def clause pattern" do
+    """
+    defmodule MyModule do
+      def example({:ok, value} = result) do
+        value
+      end
+
+      def example({:error, _reason} = error) do
+        error
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in with <- pattern" do
+    """
+    defmodule MyModule do
+      def example do
+        with {:ok, _} = resp <- start_call() do
+          resp
+        end
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in with else clause pattern" do
+    """
+    defmodule MyModule do
+      def example do
+        with {:ok, value} <- fetch(1) do
+          value
+        else
+          {:error, reason} = err -> err
+        end
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should NOT report issue for match in for generator pattern" do
+    """
+    defmodule MyModule do
+      def example(list) do
+        for {:ok, value} = item <- list do
+          value
+        end
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> refute_issues()
+  end
+
+  test "it should STILL report issue for bad match inside a clause body" do
+    """
+    defmodule MyModule do
+      def example do
+        case fetch(1) do
+          {:ok, value} ->
+            {:ok, result} = transform(value)
+            result
+
+          {:error, _} ->
+            nil
+        end
+      end
+    end
+    """
+    |> to_source_file()
+    |> run_check(MissingErrorHandling)
+    |> assert_issue()
+  end
 end

@@ -60,6 +60,21 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandling do
   @impl true
   def param_defaults, do: [exclude_test_files: false]
 
+  # def/defp head patterns are clause patterns - errors are handled by the body.
+  defp traverse({kind, meta, [header, body]}, issues, _issue_meta)
+       when kind in [:def, :defp] do
+    {fun_name, fun_meta, args} = header
+    sanitized_args = Macro.prewalk(args, &neutralize_pattern_match/1)
+    {{kind, meta, [{fun_name, fun_meta, sanitized_args}, body]}, issues}
+  end
+
+  # <-/-> patterns destructure a value the clause already handles.
+  defp traverse({kind, meta, [patterns, rest]}, issues, _issue_meta)
+       when kind in [:<-, :->] do
+    sanitized_patterns = Macro.prewalk(patterns, &neutralize_pattern_match/1)
+    {{kind, meta, [sanitized_patterns, rest]}, issues}
+  end
+
   defp traverse({:=, meta, [left, _right]} = ast, issues, issue_meta) do
     issues =
       if ok_tuple_pattern?(left) do
@@ -74,6 +89,10 @@ defmodule OeditusCredo.Check.Warning.MissingErrorHandling do
   defp traverse(ast, issues, _issue_meta) do
     {ast, issues}
   end
+
+  # In a clause pattern, drop the `=` and keep just the right operand.
+  defp neutralize_pattern_match({:=, _, [_left, right]}), do: right
+  defp neutralize_pattern_match(node), do: node
 
   # Match any tuple with :ok as first element
   # 2-element tuple represented as {:ok, meta, [value]}
